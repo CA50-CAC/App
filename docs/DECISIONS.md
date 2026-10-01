@@ -76,3 +76,8 @@ Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` its
 - **No direct membership inserts.** Members only join through `create_school` (founder) or `accept_staff_invite` (an invite sent by an owner to that email). Promoting staff to owner has no path yet; it would need its own owner-only function.
 - **Alternative considered for claims:** a policy check `reviewed_by = auth.uid()`, like `audit_log`. Rejected because it would block a second staff member from marking an already-approved claim as picked up.
 - **Verified:** undoing each fix makes at least one test fail (6 failures in total).
+
+### 2026-09-30: The app is named LostBox
+
+- **Choice:** LostBox replaces the working title Boomerang everywhere: the app name string (`app.name` in `en.ts`), the package names (`lostbox`, `@lostbox/web`), the local Supabase `project_id`, and the README, `SPEC.md`, and `CLAUDE.md` titles.
+- **Not changed:** the header comment in `supabase/migrations/0001_init.sql` still says Boomerang. That file is already applied to the hosted project and is marked "don't edit".

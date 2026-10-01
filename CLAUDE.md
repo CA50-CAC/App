@@ -1,6 +1,6 @@
-# CLAUDE.md: Boomerang (school lost-and-found)
+# CLAUDE.md: LostBox (school lost-and-found)
  
-Working title. Congressional App Challenge 2026 entry (CA-50). Deadline is roughly Oct 26, 2026; the real target is to submit by Oct 23. **VERIFY** the exact CA-50 deadline.
+Congressional App Challenge 2026 entry (CA-50). Deadline is roughly Oct 26, 2026; the real target is to submit by Oct 23. **VERIFY** the exact CA-50 deadline.
  
 This file tells you what to build next and how to work. The student author owns this project. You are the pair programmer.
  
