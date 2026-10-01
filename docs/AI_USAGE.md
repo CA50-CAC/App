@@ -11,3 +11,4 @@ What AI tools helped with, and roughly how. Kept for contest disclosure.
 | 2026-09-30 | Claude Code (Claude Opus 5.5) | Renamed the app from Boomerang to LostBox across package names, config, the app name string, and docs | The student chose the name; Claude did the find-and-replace and re-ran typecheck, lint, and tests. |
 
 <!-- Earlier work (the scaffold, commit 597ef33) isn't logged yet. Add it here. -->
+| 2026-10-01 | Claude Code (Claude Opus 5.5) | Migration `0002_mvp_support.sql`, PGlite and Supabase repository adapters, shared contract tests | The student asked for both adapters behind the existing interface with one test suite. Claude proposed the interface and schema changes; the student approved working without further check-ins. Claude checked the tests by injecting leaks and confirming they fail. |

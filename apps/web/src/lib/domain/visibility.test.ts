@@ -15,6 +15,7 @@ function item(overrides: Partial<StaffItem> = {}): StaffItem {
     foundAt: "2026-09-20T15:00:00.000Z",
     visibility: "full",
     ownerHint: "Name on case: J. Rivera",
+    staffNote: "Kept in drawer 2; check the scratch on the back",
     photoPath: "school-a/item-1.jpg",
     createdAt: "2026-09-20T15:05:00.000Z",
     resolvedAt: null,
@@ -46,6 +47,14 @@ describe("toStudentView", () => {
   it("hides items that are no longer available", () => {
     for (const status of ["claimed", "returned", "donated", "removed"] as const) {
       expect(toStudentView(item({ status }), null)).toBeNull();
+    }
+  });
+
+  it("never leaks the private staff note", () => {
+    for (const visibility of ["full", "limited"] as const) {
+      const view = toStudentView(item({ visibility }), null);
+      expect(view).not.toHaveProperty("staffNote");
+      expect(JSON.stringify(view)).not.toContain("drawer 2");
     }
   });
 

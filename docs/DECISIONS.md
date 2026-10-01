@@ -81,3 +81,21 @@ Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` its
 
 - **Choice:** LostBox replaces the working title Boomerang everywhere: the app name string (`app.name` in `en.ts`), the package names (`lostbox`, `@lostbox/web`), the local Supabase `project_id`, and the README, `SPEC.md`, and `CLAUDE.md` titles.
 - **Not changed:** the header comment in `supabase/migrations/0001_init.sql` still says Boomerang. That file is already applied to the hosted project and is marked "don't edit".
+
+### 2026-10-01: Repository adapters and one shared contract test
+
+- **Choice:** `src/lib/repo/pglite.ts` and `src/lib/repo/supabase.ts` both implement `repo/interface.ts`. One test suite (`tests/repo/contract.ts`, 39 tests) runs against PGlite in CI and against a hosted project with `pnpm test:supabase`.
+- **Interface changes:** `forStaff(userId)` became `forStaff({ userId, accessToken })`, because on Supabase the database learns who is asking from the login token, not from an id we pass. Expected failures are thrown as `RepoError` with a code (`not_found`, `conflict`, `forbidden`, `invalid`) so both adapters fail the same way. Added `getClaim`, `Member.createdAt`, and `StaffItem.staffNote`.
+- **Who runs as whom:** staff calls run as `authenticated` with RLS (PGlite switches role inside a transaction; Supabase sends the user's token with the publishable key). Student, platform, and system calls run as the database owner / secret key, so every student query filters by the school id from the signed session and reads only `student_items`.
+- **Supabase adapter limits:** Supabase's API has no multi-statement transactions, so `saveLocations` and `setItemStatus` are several calls in a row. A failure halfway leaves a partial change (for example, locations saved but links not). Acceptable for now; a database function would fix it if it ever matters.
+- **Checked the tests catch problems:** removing the school filter from a student query, or adding `photoUrl`/`note` keys to Limited items, made 4 contract tests fail.
+- **Not yet run:** the contract on hosted Supabase. It needs a test project with `0002` applied and `SUPABASE_TEST_PUBLISHABLE_KEY` set.
+
+### 2026-10-01: Migration 0002 (staff notes, rate limits, member emails, photo bucket)
+
+- **`items.staff_note`** for private notes. `owner_hint` wasn't reused because any value in it shows students a "has a name label" badge, which would reveal that a private note exists.
+- **`photo_in_school_folder`** check: a photo path must start with the item's own school id. Staff can update items directly through Supabase's API, so without it someone could point an item at another school's photo. Added `NOT VALID` so existing rows aren't re-checked.
+- **`hit_rate_limit()`** does "count and check" in one statement. A read-then-write from the app through the API would let two simultaneous requests both pass. Server only (revoked from `anon` and `authenticated`).
+- **`list_school_members()`**: on Supabase, signed-in users can't read `auth.users`, so this `security definer` function returns emails only for schools the caller belongs to.
+- **Photo bucket `item-photos`:** private, with no Storage policies at all. Only the server (secret key) reads and writes photos; browsers get short-lived signed URLs, and students only for Full items. Created by the migration only where a `storage` schema exists, so PGlite skips it.
+- **Alternatives:** Storage RLS policies so staff upload straight from the browser. Rejected because EXIF must be stripped on the server before storage anyway.

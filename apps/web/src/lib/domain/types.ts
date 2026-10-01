@@ -72,6 +72,8 @@ export interface StaffItem {
   visibility: Visibility;
   /** Staff-only text such as a name written on a label. Never shown to students. */
   ownerHint: string | null;
+  /** Private notes for staff (where it's kept, marks to check). Never shown to students. */
+  staffNote: string | null;
   photoPath: string | null;
   createdAt: string;
   resolvedAt: string | null;
