@@ -43,3 +43,13 @@ One entry per non-trivial technical choice: the choice, what else was considered
 
 - **Choice:** teal (`#0f766e` light, `#5eead4` dark). Student had no preference.
 - **Reason:** calm, not "alert" colored, and passes WCAG AA on both themes (5.47:1 light, 12.77:1 dark, measured).
+
+### 2026-09-30: Hosted Supabase project, alongside PGlite
+
+- **Choice:** The team now has a hosted Supabase project. It's used when `DATA_ADAPTER=supabase`. PGlite stays the default for tests, CI, and the offline demo.
+- **Alternatives:** replace PGlite with Supabase everywhere (tests and CI would then need network access and secrets, and the demo would no longer run with "no external services beyond the local DB").
+- **Details:**
+  - Keys use Supabase's newer format: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`, safe to expose; RLS protects the data) replaces the old anon key, and `SUPABASE_SECRET_KEY` (`sb_secret_…`, server-only) replaces the service-role key.
+  - No browser Supabase client. Students never touch the database, and staff screens go through server code, so the database is only reachable through code we control.
+  - `src/proxy.ts` refreshes the staff session on each request (Next 16 renamed middleware to proxy). It calls `supabase.auth.getClaims()`, which is what actually triggers the refresh, and copies the cache-control headers `@supabase/ssr` 0.12 passes to `setAll`. Supabase's dashboard quickstart snippet does neither.
+- **Migrations:** applied to the hosted project with the Supabase CLI, not by pasting into the SQL editor, so the hosted database can't drift from `supabase/migrations/`. The repo had no migration runner yet to reuse. PGlite reads the same files.
