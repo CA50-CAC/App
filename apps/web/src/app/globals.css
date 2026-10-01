@@ -2,6 +2,8 @@
 
 /*
  * Design tokens. One accent color (teal), calm neutrals, light and dark themes.
+ * Layers: the page is `background` (a soft off-white), content sits on raised
+ * white `card`s with a soft shadow, and `surface` is a quiet fill inside cards.
  * Contrast targets: body text and the accent on the background both meet WCAG AA.
  *   light: accent #0f766e on #ffffff ≈ 5.5:1
  *   dark:  accent #5eead4 on #0b1215 ≈ 12.8:1
@@ -10,14 +12,16 @@
  * (checked by src/app/contrast.test.ts).
  */
 :root {
-  --background: #ffffff;
-  --surface: #f5f7f7;
-  --foreground: #11181c;
-  --muted: #55636b;
-  --border: #dde3e5;
+  --background: #f6f7f6;
+  --card: #ffffff;
+  --surface: #eff2f1;
+  --foreground: #0f1a1d;
+  --muted: #526068;
+  --border: #e0e6e4;
   --accent: #0f766e;
   --accent-foreground: #ffffff;
-  --accent-soft: #e6f4f2;
+  --accent-soft: #e2f2ef;
+  --shadow-color: 180 20% 20%;
   --danger: #b42318;
   --danger-soft: #fdecea;
   --success: #166534;
@@ -28,14 +32,16 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0b1215;
-    --surface: #131c20;
+    --background: #0a1013;
+    --card: #11191d;
+    --surface: #182328;
     --foreground: #ecf1f2;
     --muted: #9aa8ae;
-    --border: #26343a;
+    --border: #233137;
     --accent: #5eead4;
     --accent-foreground: #04201d;
-    --accent-soft: #12302d;
+    --accent-soft: #11302c;
+    --shadow-color: 200 40% 2%;
     --danger: #f97066;
     --danger-soft: #3a1714;
     --success: #4ade80;
@@ -47,6 +53,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-card: var(--card);
   --color-surface: var(--surface);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
@@ -67,6 +74,48 @@
 body {
   background: var(--background);
   color: var(--foreground);
+  font-feature-settings: "ss01", "cv11";
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+
+/*
+ * A raised panel: white on the soft page background, hairline border, and a
+ * soft two-layer shadow. Most content (forms, lists, item cards) sits in one.
+ */
+@utility card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  box-shadow:
+    0 1px 2px hsl(var(--shadow-color) / 0.06),
+    0 4px 16px -4px hsl(var(--shadow-color) / 0.08);
+}
+
+/* A card that lifts a little on hover (only for links; motion is reduced below). */
+@utility card-hover {
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease,
+    border-color 160ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+    box-shadow:
+      0 2px 4px hsl(var(--shadow-color) / 0.06),
+      0 12px 28px -8px hsl(var(--shadow-color) / 0.18);
+  }
+}
+
+/* A soft accent glow behind hero sections. Decorative only. */
+@utility hero-glow {
+  background:
+    radial-gradient(60% 50% at 50% 0%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 70%),
+    var(--background);
 }
 
 /* One visible focus style everywhere, for keyboard users. */

@@ -5,7 +5,7 @@
 import type { ComponentProps, ReactNode } from "react";
 
 export const inputClass =
-  "block w-full min-h-11 rounded-xl border border-border bg-background px-3 py-2 text-base text-foreground placeholder:text-muted aria-[invalid=true]:border-danger";
+  "block w-full min-h-11 rounded-xl border border-border bg-card px-3.5 py-2 text-base text-foreground shadow-xs transition-colors placeholder:text-muted/80 hover:border-muted/40 focus:border-accent aria-[invalid=true]:border-danger";
 
 interface FieldProps {
   id: string;
@@ -22,7 +22,7 @@ export function Field({ id, label, help, error, optional, children }: FieldProps
   const describedBy = [helpId, errorId].filter(Boolean).join(" ") || undefined;
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="font-medium">
+      <label htmlFor={id} className="text-[0.95rem] font-medium">
         {label}
         {optional ? <span className="ml-1 font-normal text-muted">({optional})</span> : null}
       </label>

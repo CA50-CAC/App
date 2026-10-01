@@ -33,6 +33,10 @@ function contrast(a: string, b: string): number {
 const PAIRS: Array<[string, string]> = [
   ["foreground", "background"],
   ["foreground", "surface"],
+  ["foreground", "card"],
+  ["muted", "card"],
+  ["accent", "card"],
+  ["danger", "card"],
   ["muted", "background"],
   ["muted", "surface"],
   ["accent", "background"],
