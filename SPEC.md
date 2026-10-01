@@ -1,6 +1,6 @@
-# Boomerang: School Lost-and-Found with Visual Search
+# LostBox: School Lost-and-Found with Visual Search
  
-Working title (change freely). Congressional App Challenge 2026 entry, CA-50.
+Congressional App Challenge 2026 entry, CA-50.
 Status: v1 draft for review. Save as `SPEC.md` in the repo root.
  
 ---
@@ -324,7 +324,7 @@ If a frontend design skill or guide is available in your environment, use it for
 - **No scope creep.** If a task isn't in the backlog, propose it and wait.
 ### Suggested `CLAUDE.md` for the repo root
 ```
-# Boomerang
+# LostBox
 Read SPEC.md first. Follow Section 0 and Section 15.
 - Plan before coding; ask for approval.
 - Student authors packages/matching and eval/. You review and write tests.

@@ -1,4 +1,4 @@
-# Boomerang
+# LostBox
 
 A school lost-and-found that students can actually browse, with privacy built in.
 Congressional App Challenge 2026 entry (CA-50).

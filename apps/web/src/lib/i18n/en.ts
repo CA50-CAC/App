@@ -5,7 +5,7 @@
  * Use {name} placeholders for values: t("gallery.count", { count: 3 }).
  */
 export const en = {
-  "app.name": "Boomerang",
+  "app.name": "LostBox",
   "app.tagline": "Lost something at school? See what's been found.",
 
   "visibility.full": "Full",
