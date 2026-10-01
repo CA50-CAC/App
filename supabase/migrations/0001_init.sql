@@ -1,7 +1,9 @@
 -- =============================================================================
 -- 0001_init.sql: Boomerang initial schema
 --
--- DRAFT FOR REVIEW. Not applied anywhere yet.
+-- APPLIED to the hosted Supabase project on 2026-09-30. Don't edit this file:
+-- the hosted database won't re-run it. Put any change in a new migration
+-- (0002_..., 0003_...) and apply it with `pnpm db:push`.
 --
 -- Runs on Supabase as-is. For the local prototype (PGlite, no Docker) we first
 -- run supabase/local/auth_shim.sql, which fakes the bits of Supabase this file
