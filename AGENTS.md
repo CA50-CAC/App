@@ -1,1 +1,1 @@
-empty for now
+Refer to CLAUDE.md
