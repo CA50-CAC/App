@@ -19,7 +19,7 @@ export function StaffPanel({ members, invites, isOwner }: { members: Member[]; i
         <h3 id="members-title" className="font-semibold">
           {t("staff.members")}
         </h3>
-        <ul className="flex flex-col divide-y divide-border rounded-xl border border-border">
+        <ul className="card flex flex-col divide-y divide-border overflow-hidden">
           {members.map((m) => (
             <li key={m.userId} className="flex flex-wrap items-center justify-between gap-2 px-4 py-3">
               <span className="break-all">{m.email}</span>
@@ -37,7 +37,7 @@ export function StaffPanel({ members, invites, isOwner }: { members: Member[]; i
           {pending.length === 0 ? (
             <p className="text-muted">{t("staff.noInvites")}</p>
           ) : (
-            <ul className="flex flex-col divide-y divide-border rounded-xl border border-border">
+            <ul className="card flex flex-col divide-y divide-border overflow-hidden">
               {pending.map((i) => (
                 <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 py-1 pr-1 pl-4">
                   <span className="break-all">

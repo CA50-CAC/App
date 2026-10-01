@@ -136,6 +136,12 @@ Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` its
 - **Choice:** Playwright and `@axe-core/playwright` (dev only) for end-to-end and accessibility checks against a production build, with the demo seeded into `.data-e2e/`. A new CI job runs them. Another CI job builds with the Supabase adapter and a fake secret, then fails if the secret appears in browser files.
 - **`tsx`** (dev only) runs `scripts/seed-demo.ts` with the `@/` import paths. pnpm's `allowBuilds` now lists `esbuild: false` (its install script only re-checks the prebuilt binary).
 
+### 2026-10-01: Design pass (cards on a soft background)
+
+- **Choice:** The page background is a soft off-white and content sits on white `card`s (a Tailwind `@utility` in `globals.css`) with a hairline border and soft shadow; dark mode mirrors it. One accent color is kept. New tokens (`card`) are added to the contrast test.
+- **Gallery categories:** quick-filter chips are submit buttons in the search form (`name="pick"`), not links, so they work without JavaScript and keep the search text and other filters.
+- **Alternatives:** a component library (shadcn/ui, Radix). Rejected: a new dependency for styling we already have, and more code the student has to explain.
+
 ### 2026-10-01: Out of scope, as agreed
 
 AI matching, auto-fill, auto-blur, notifications, analytics, lost-item reports, the platform approval page, the poster page, the donate list, the retention job (the data-layer methods for it exist and are tested), logo upload, location "nearby" links UI, and QR codes on the launch screen.

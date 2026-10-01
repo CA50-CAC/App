@@ -93,7 +93,7 @@ export default async function SetupStep({ params }: PageProps<"/setup/[step]">) 
           <Alert tone={fresh.status === "approved" ? "success" : "warning"}>
             {fresh.status === "approved" ? t("launch.approved") : t("launch.pendingApproval")}
           </Alert>
-          <section className="rounded-2xl border border-border p-5">
+          <section className="card p-5 sm:p-6">
             <JoinCodePanel code={fresh.joinCode} appUrl={appEnv().appUrl} isOwner />
           </section>
           <section aria-labelledby="summary" className="flex flex-col gap-2">

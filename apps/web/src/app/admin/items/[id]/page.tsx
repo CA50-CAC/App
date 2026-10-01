@@ -45,7 +45,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<"/adm
           ← {t("edit.backToItems")}
         </Link>
         <div className="flex flex-wrap items-center gap-3">
-          <h1 className="text-2xl font-semibold tracking-tight">{t(`category.${item.category}`)}</h1>
+          <h1 className="text-3xl font-semibold tracking-tight">{t(`category.${item.category}`)}</h1>
           <StatusBadge status={item.status} />
           <VisibilityBadge visibility={item.visibility} />
         </div>
@@ -106,7 +106,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<"/adm
               <StatusButton itemId={item.id} status="available" label={t("edit.markAvailable")} />
             )}
             {item.status !== "removed" ? (
-              <form action={setItemStatus} className="flex flex-col gap-2 rounded-xl border border-border p-3">
+              <form action={setItemStatus} className="card flex flex-col gap-2 p-4">
                 <input type="hidden" name="itemId" value={item.id} />
                 <input type="hidden" name="status" value="removed" />
                 <TextInput id="reason" name="reason" label={t("edit.remove.reason")} help={t("edit.remove.reason.help")} maxLength={200} required />
@@ -126,7 +126,7 @@ export default async function ItemPage({ params, searchParams }: PageProps<"/adm
             ) : (
               <ul className="flex flex-col gap-2">
                 {itemClaims.map((c) => (
-                  <li key={c.id} className="rounded-xl border border-border p-3 text-sm">
+                  <li key={c.id} className="card p-4 text-sm">
                     <p className="font-medium">“{c.claimantDetail}”</p>
                     <p className="text-muted">
                       {t(`claimStatus.${c.status}`)} · {formatDateTime(c.createdAt, school.timeZone)}

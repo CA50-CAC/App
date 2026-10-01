@@ -78,7 +78,7 @@ export function PhotoInput({ currentUrl, error }: { currentUrl?: string | null; 
         <div className="flex flex-col gap-2">
           <label
             htmlFor={id}
-            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-border px-4 font-medium hover:bg-surface has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-accent"
+            className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-xl border border-border bg-card px-4 font-semibold shadow-xs hover:bg-surface has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-accent"
           >
             {busy ? "…" : shown ? t("intake.photo.replace") : t("intake.photo.take")}
             <input

@@ -12,7 +12,7 @@ import { t } from "@/lib/i18n";
 import { photoStore } from "@/lib/server/photos";
 import { getStaffContext } from "@/lib/server/staff-context";
 
-const selectClass = "min-h-11 rounded-xl border border-border bg-background px-3";
+const selectClass = "min-h-11 rounded-xl border border-border bg-card px-3 shadow-xs";
 
 export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams;
@@ -41,14 +41,14 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("items.title")}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("items.title")}</h1>
         <ButtonLink href="/admin/items/new">+ {t("items.add")}</ButtonLink>
       </div>
       {params.reset ? <Alert tone="success">{t("demo.resetDone")}</Alert> : null}
       {params.removed ? <Alert tone="success">{t("status.removed")}.</Alert> : null}
       {params.error === "owner" ? <Alert tone="warning">{t("admin.error.owner")}</Alert> : null}
 
-      <form method="get" className="flex flex-wrap items-end gap-3" aria-label="Filters">
+      <form method="get" className="card flex flex-wrap items-end gap-3 p-4" aria-label="Filters">
         <label className="flex flex-col gap-1 text-sm font-medium">
           {t("items.filter.status")}
           <select name="status" defaultValue={status} className={selectClass}>
@@ -100,12 +100,12 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
           {filtered ? null : t("items.empty.body")}
         </EmptyState>
       ) : (
-        <ul className="flex flex-col divide-y divide-border rounded-2xl border border-border">
+        <ul className="card flex flex-col divide-y divide-border overflow-hidden">
           {items.map((item, i) => {
             const pending = pendingByItem.get(item.id) ?? 0;
             return (
               <li key={item.id}>
-                <Link href={`/admin/items/${item.id}`} className="flex items-center gap-4 p-3 hover:bg-surface">
+                <Link href={`/admin/items/${item.id}`} className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-surface">
                   <Thumb item={item} url={urls[i]} />
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <p className="truncate font-medium">
@@ -119,7 +119,7 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
                   </div>
                   <div className="hidden flex-wrap items-center justify-end gap-2 sm:flex">
                     {pending ? (
-                      <span className="rounded-full bg-accent px-2 py-0.5 text-sm font-medium text-accent-foreground">
+                      <span className="rounded-full bg-accent px-2.5 py-0.5 text-sm font-semibold text-accent-foreground">
                         {t("items.pendingClaims", { count: pending })}
                       </span>
                     ) : null}
