@@ -44,6 +44,7 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
         <h1 className="text-2xl font-semibold tracking-tight">{t("items.title")}</h1>
         <ButtonLink href="/admin/items/new">+ {t("items.add")}</ButtonLink>
       </div>
+      {params.reset ? <Alert tone="success">{t("demo.resetDone")}</Alert> : null}
       {params.removed ? <Alert tone="success">{t("status.removed")}.</Alert> : null}
       {params.error === "owner" ? <Alert tone="warning">{t("admin.error.owner")}</Alert> : null}
 

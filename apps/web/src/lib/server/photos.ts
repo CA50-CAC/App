@@ -17,7 +17,7 @@ import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { findRepoRoot } from "@/lib/db/migrations";
+import { uploadsDir } from "@/lib/db/data-dir";
 import { appEnv } from "@/lib/env";
 import { createServiceClient } from "@/lib/repo/supabase";
 
@@ -63,7 +63,7 @@ export function verifyLocalPhoto(photoPath: string, exp: number, sig: string, se
 }
 
 export function localUploadsDir(): string {
-  return path.join(findRepoRoot(), ".data", "uploads");
+  return uploadsDir();
 }
 
 export function contentTypeFor(photoPath: string): string {

@@ -10,7 +10,9 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:supabase": "vitest run --config vitest.supabase.config.mts"
+    "test:supabase": "vitest run --config vitest.supabase.config.mts",
+    "seed:demo": "tsx scripts/seed-demo.ts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@electric-sql/pglite": "^0.5.8",

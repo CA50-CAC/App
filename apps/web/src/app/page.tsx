@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Alert } from "@/components/ui/alert";
 import { ButtonLink } from "@/components/ui/button";
 import { Logo } from "@/components/logo";
 import { DEMO_JOIN_CODE } from "@/lib/demo/constants";
@@ -25,6 +26,7 @@ export default async function Home({ searchParams }: PageProps<"/">) {
           </h1>
           <p className="text-lg text-muted">{t("home.lead")}</p>
         </div>
+        {params.join ? <Alert tone="info">{t("home.joinFirst")}</Alert> : null}
         <JoinForm initialCode={code} />
         {demo ? <p className="text-sm text-muted">{t("home.demoHint", { code: DEMO_JOIN_CODE })}</p> : null}
       </section>

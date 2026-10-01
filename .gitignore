@@ -8,3 +8,6 @@ coverage/
 
 # Local prototype database and uploaded photos (never commit these)
 .data/
+.data-e2e/
+test-results/
+playwright-report/

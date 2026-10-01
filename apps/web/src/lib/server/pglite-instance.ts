@@ -10,13 +10,13 @@ import "server-only";
 import { mkdirSync } from "node:fs";
 import path from "node:path";
 import type { PGlite } from "@electric-sql/pglite";
-import { findRepoRoot } from "@/lib/db/migrations";
+import { pgliteDir } from "@/lib/db/data-dir";
 import { openPglite } from "@/lib/db/pglite";
 
 const globalForDb = globalThis as unknown as { lostboxPglite?: Promise<PGlite> };
 
 export function pgliteDataDir(): string {
-  return path.join(findRepoRoot(), ".data", "pglite");
+  return pgliteDir();
 }
 
 export function getPglite(): Promise<PGlite> {

@@ -19,3 +19,24 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
+
+  e2e:
+    # Full loop, privacy, wizard, and accessibility checks in a real browser,
+    # against a production build with the seeded demo school. No secrets needed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @lostbox/web exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: apps/web/test-results/
+          retention-days: 7
