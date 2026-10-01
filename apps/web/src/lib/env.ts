@@ -27,10 +27,16 @@ export function readEnv(env: Record<string, string | undefined> = process.env): 
   if (env.DATA_ADAPTER && env.DATA_ADAPTER !== "pglite" && env.DATA_ADAPTER !== "supabase") {
     throw new Error(`DATA_ADAPTER must be "pglite" or "supabase", not "${env.DATA_ADAPTER}"`);
   }
-  // PGlite keeps its data in a local folder. On Vercel each request can land on
-  // a fresh machine, so data would vanish. Refuse instead of losing data.
-  if (env.VERCEL && dataAdapter !== "supabase") {
-    throw new Error("On Vercel, set DATA_ADAPTER=supabase. PGlite only works on a single machine.");
+  if (env.VERCEL) {
+    const missing = missingVercelSettings(env);
+    if (missing.length) {
+      throw new Error(
+        `Vercel (${env.VERCEL_ENV ?? "unknown"} environment) is missing settings:\n` +
+          missing.map((m) => `  - ${m}`).join("\n") +
+          `\nAdd them in Vercel > Project > Settings > Environment Variables, ticking the ` +
+          `"${env.VERCEL_ENV === "production" ? "Production" : env.VERCEL_ENV === "preview" ? "Preview" : env.VERCEL_ENV ?? "matching"}" environment, then redeploy. See docs/DEPLOY.md.`,
+      );
+    }
   }
 
   const demoMode =
@@ -49,7 +55,7 @@ export function readEnv(env: Record<string, string | undefined> = process.env): 
     return secret;
   };
 
-  const appUrl = (env.APP_URL || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")).replace(/\/+$/, "");
+  const appUrl = (env.APP_URL || vercelUrl(env) || "http://localhost:3000").replace(/\/+$/, "");
 
   return {
     dataAdapter,
@@ -60,6 +66,31 @@ export function readEnv(env: Record<string, string | undefined> = process.env): 
       return sessionSecret();
     },
   };
+}
+
+/**
+ * Everything a Vercel deployment needs, all reported at once so a failed
+ * build lists every missing setting instead of one per attempt.
+ * PGlite isn't allowed there: it keeps data in a local folder, and on Vercel
+ * each request can land on a fresh machine, so data would vanish.
+ */
+export function missingVercelSettings(env: Record<string, string | undefined>): string[] {
+  const missing: string[] = [];
+  if (env.DATA_ADAPTER !== "supabase") missing.push("DATA_ADAPTER=supabase (PGlite only works on a single machine)");
+  if (!env.NEXT_PUBLIC_SUPABASE_URL) missing.push("NEXT_PUBLIC_SUPABASE_URL");
+  if (!env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) missing.push("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY");
+  if (!env.SUPABASE_SECRET_KEY) missing.push("SUPABASE_SECRET_KEY");
+  if ((env.SESSION_SECRET ?? "").length < 32) missing.push("SESSION_SECRET (at least 32 random characters)");
+  return missing;
+}
+
+/** Without APP_URL: previews link to their own branch URL, production to the production domain. */
+function vercelUrl(env: Record<string, string | undefined>): string | null {
+  const host =
+    env.VERCEL_ENV === "preview"
+      ? env.VERCEL_BRANCH_URL || env.VERCEL_URL
+      : env.VERCEL_PROJECT_PRODUCTION_URL || env.VERCEL_URL;
+  return host ? `https://${host}` : null;
 }
 
 let cached: AppEnv | null = null;

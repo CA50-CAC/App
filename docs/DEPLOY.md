@@ -61,8 +61,17 @@ can't use up the one-time link.
 
 ## 3. Vercel environment variables
 
-Set these in Vercel → Project → Settings → Environment Variables, for **Production**
-(and Preview if you use previews):
+Set these in Vercel → Project → Settings → Environment Variables. Tick **Production**
+*and* **Preview**: pull requests deploy as Preview, and a Preview build without
+them fails on purpose, listing every missing variable.
+
+If a variable is missing, the build stops with a message like:
+
+```
+Vercel (preview environment) is missing settings:
+  - DATA_ADAPTER=supabase (PGlite only works on a single machine)
+  - SUPABASE_SECRET_KEY
+```
 
 | Variable | Value | Notes |
 |---|---|---|
@@ -71,14 +80,21 @@ Set these in Vercel → Project → Settings → Environment Variables, for **Pr
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `sb_publishable_…` | Safe to expose (RLS protects data). We don't actually send it to browsers: there is no browser Supabase client. |
 | `SUPABASE_SECRET_KEY` | `sb_secret_…` | **Server-only. Mark it Sensitive in Vercel.** Never prefix with `NEXT_PUBLIC_`. |
 | `SESSION_SECRET` | 32+ random characters | Signs student and staff cookies. `node -e "console.log(crypto.randomBytes(32).toString('base64url'))"`. Changing it signs everyone out. |
-| `APP_URL` | `https://lostbox.example.org` | No trailing slash. Used in magic links, invite links, and join links. Must match the Supabase Site URL. |
+| `APP_URL` | `https://lostbox.example.org` | **Production only.** No trailing slash. Used in magic links, invite links, and join links. Must match the Supabase Site URL. Leave it unset for Preview: previews then use their own branch URL. |
 | `DEMO_MODE` | `false` | Or leave unset (production defaults to off). Never `true` on a real school's deployment. |
 | `PLATFORM_ADMIN_EMAILS` | (optional) | Not used yet (the approval page is out of scope). |
 
 Not needed on Vercel: `LOSTBOX_DATA_DIR`, `SUPABASE_TEST_*`.
 
-`APP_URL` falls back to `VERCEL_PROJECT_PRODUCTION_URL` if unset, but set it
-explicitly so preview deployments don't send links to the wrong place.
+Without `APP_URL`, production falls back to `VERCEL_PROJECT_PRODUCTION_URL` and
+previews to `VERCEL_BRANCH_URL`.
+
+**Previews and data.** Preview deployments run whatever code is in a pull
+request. Point their Supabase variables at a **separate test project**, not the
+pilot school's, so unmerged code never touches real data. For magic links to
+work on previews, add `https://*-<your-vercel-team>.vercel.app/auth/confirm**`
+to that project's Redirect URLs. If you'd rather not run previews at all, turn
+them off under Vercel → Project → Settings → Git.
 
 ## 4. Approve the pilot school
 

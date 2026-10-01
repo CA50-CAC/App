@@ -15,9 +15,37 @@ describe("readEnv", () => {
     expect(readEnv({ NODE_ENV: "production", SESSION_SECRET: "x".repeat(40) }).sessionSecret).toBe("x".repeat(40));
   });
 
-  it("refuses PGlite on Vercel", () => {
-    expect(() => readEnv({ NODE_ENV: "production", VERCEL: "1" })).toThrow(/DATA_ADAPTER=supabase/);
-    expect(() => readEnv({ NODE_ENV: "production", VERCEL: "1", DATA_ADAPTER: "supabase" })).not.toThrow();
+  const vercelOk = {
+    NODE_ENV: "production",
+    VERCEL: "1",
+    VERCEL_ENV: "preview",
+    DATA_ADAPTER: "supabase",
+    NEXT_PUBLIC_SUPABASE_URL: "https://x.supabase.co",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_x",
+    SUPABASE_SECRET_KEY: "sb_secret_x",
+    SESSION_SECRET: "s".repeat(40),
+  };
+
+  it("on Vercel, lists every missing setting at once and names the environment", () => {
+    let message = "";
+    try {
+      readEnv({ NODE_ENV: "production", VERCEL: "1", VERCEL_ENV: "preview" });
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    for (const name of ["DATA_ADAPTER=supabase", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY", "SUPABASE_SECRET_KEY", "SESSION_SECRET"]) {
+      expect(message).toContain(name);
+    }
+    expect(message).toContain('"Preview"');
+    expect(() => readEnv(vercelOk)).not.toThrow();
+  });
+
+  it("on Vercel without APP_URL, previews link to their branch URL and production to the production domain", () => {
+    expect(readEnv({ ...vercelOk, VERCEL_BRANCH_URL: "lostbox-git-x.vercel.app", VERCEL_PROJECT_PRODUCTION_URL: "lostbox.org" }).appUrl).toBe(
+      "https://lostbox-git-x.vercel.app",
+    );
+    expect(readEnv({ ...vercelOk, VERCEL_ENV: "production", VERCEL_PROJECT_PRODUCTION_URL: "lostbox.org" }).appUrl).toBe("https://lostbox.org");
+    expect(readEnv({ ...vercelOk, APP_URL: "https://custom.org" }).appUrl).toBe("https://custom.org");
   });
 
   it("rejects an unknown adapter and trims a trailing slash from APP_URL", () => {
