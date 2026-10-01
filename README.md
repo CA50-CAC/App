@@ -41,6 +41,40 @@ reaches the database only through the repository interface in
 `apps/web/src/lib/repo/interface.ts`, so switching to Supabase means writing one
 new adapter, not changing pages. See `docs/DECISIONS.md`.
 
+### Supabase setup (hosted project)
+
+Migrations go to the hosted database through the Supabase CLI (installed as a
+dev dependency), never by pasting into the dashboard, so the database always
+matches `supabase/migrations/`.
+
+```bash
+pnpm exec supabase login                                   # once per machine, opens a browser
+pnpm exec supabase link --project-ref <your-project-ref>   # once per clone; asks for the DB password
+pnpm db:status                                             # which migrations the hosted DB has
+pnpm db:push                                               # apply new migrations (ask the team first)
+```
+
+Migration files must be named `<number>_<name>.sql` (the CLI skips anything
+else). Keep them zero-padded: `0002_...`, `0003_...`.
+
+In the Supabase dashboard, under Authentication > URL Configuration, add your
+app URL (for example `http://localhost:3000/**`) to the redirect allowlist, or
+magic links won't return to the app.
+
+### Are the local tests testing what's deployed?
+
+The database tests in `apps/web/tests/db/` (tenant isolation, plus a schema
+guard that fails if anything in `public` is open to the public API) run on
+PGlite by default. To run the exact same tests against a hosted project:
+
+```bash
+# fill in SUPABASE_TEST_* in apps/web/.env.local (see .env.example)
+pnpm test:supabase
+```
+
+Use a separate Supabase project for this if you can. Test data uses a
+`zz-test-` slug and is deleted afterwards.
+
 ## Demo school
 
 Not built yet. When it is: `pnpm seed:demo` creates **Demo High School** with
@@ -58,6 +92,8 @@ packages/           Shared packages (the matching engine will live in packages/m
 supabase/
   migrations/       SQL schema, Row Level Security policies
   local/            Shims that let the migrations run locally in PGlite
+  config.toml       Supabase CLI settings
+apps/web/tests/db   Database tests (isolation, schema guard); run on PGlite or Supabase
 docs/               DECISIONS.md
 ```
 

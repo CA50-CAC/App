@@ -53,3 +53,15 @@ One entry per non-trivial technical choice: the choice, what else was considered
   - No browser Supabase client. Students never touch the database, and staff screens go through server code, so the database is only reachable through code we control.
   - `src/proxy.ts` refreshes the staff session on each request (Next 16 renamed middleware to proxy). It calls `supabase.auth.getClaims()`, which is what actually triggers the refresh, and copies the cache-control headers `@supabase/ssr` 0.12 passes to `setAll`. Supabase's dashboard quickstart snippet does neither.
 - **Migrations:** applied to the hosted project with the Supabase CLI, not by pasting into the SQL editor, so the hosted database can't drift from `supabase/migrations/`. The repo had no migration runner yet to reuse. PGlite reads the same files.
+
+### 2026-09-30: Database tests run on PGlite and, on demand, on hosted Supabase
+
+- **Problem:** PGlite doesn't have Supabase's `auth` schema, roles, or default privileges. The shim fakes them, so the local tests could pass while production behaves differently.
+- **Choice:**
+  1. The shim now copies Supabase's default privileges (new objects in `public` are granted to `anon` and `authenticated`). Local is now at least as open as production, never more locked down.
+  2. A schema guard test (`tests/db/schema-guard.test.ts`) checks the catalog: every table has RLS on, `anon` can touch nothing, and `authenticated` has exactly the listed privileges and functions.
+  3. The isolation test (`tests/db/isolation.test.ts`) works at the SQL level, so the same file runs on PGlite (default, CI) or the hosted project (`pnpm test:supabase`, opt-in, separate `SUPABASE_TEST_*` env vars).
+- **It found a real bug:** with Supabase's defaults copied in, the guard showed `anon` could use the `audit_log` ID sequence, because `0001_init.sql` revoked tables and functions but not sequences. Fixed before the migration was ever applied.
+- **Checked the tests catch problems:** temporarily setting the items policy to `using (true)` and removing the sequence revoke made both tests fail.
+- **Still not covered:** how Supabase turns a login token into a database identity (we set the same setting by hand in tests), and Storage policies (photos are on local disk for now). Both will be covered by adapter-level tests when the Supabase adapter and Storage exist.
+- **Dependencies:** `postgres` (postgres.js, dev only, no dependencies of its own) for the direct connection in `pnpm test:supabase`; `@electric-sql/pglite` (already chosen above); `supabase` CLI (dev only).

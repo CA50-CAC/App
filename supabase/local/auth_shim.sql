@@ -8,7 +8,8 @@
 --
 -- How a staff request runs locally:
 --   set local role authenticated;
---   select set_config('request.jwt.claim.sub', '<user uuid>', true);
+--   select set_config('request.jwt.claims', '{"sub":"<user uuid>","role":"authenticated"}', true);
+--   (the same setting Supabase's API layer fills in from the login token)
 --   ... queries ...   -- RLS sees auth.uid() = that user
 -- =============================================================================
 
@@ -52,6 +53,18 @@ end
 $$;
 
 grant usage on schema public to anon, authenticated;
+
+-- Copy Supabase's default privileges. On Supabase, every NEW table, view,
+-- sequence, and function in `public` is automatically granted to anon and
+-- authenticated; only RLS and explicit revokes close it. Plain Postgres grants
+-- them nothing. Without these lines, a future migration that forgets a revoke
+-- would look locked down in our tests but be open in production. With them,
+-- local is at least as open as production, so the schema guard test
+-- (apps/web/tests/db/schema-guard.test.ts) catches the mistake here first.
+-- VERIFY against the hosted project with `pnpm test:supabase`.
+alter default privileges in schema public grant all on tables    to anon, authenticated;
+alter default privileges in schema public grant all on sequences to anon, authenticated;
+alter default privileges in schema public grant all on functions to anon, authenticated;
 grant usage on schema auth to authenticated;
 grant select (id, email) on auth.users to authenticated;
 grant execute on function auth.uid() to anon, authenticated;

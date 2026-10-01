@@ -321,6 +321,7 @@ create policy audit_insert on public.audit_log for insert to authenticated
 -- a student's claim text.
 
 revoke all on all tables in schema public from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;  -- Supabase grants these by default too
 revoke all on all functions in schema public from public, anon;
 
 grant select on public.schools to authenticated;
