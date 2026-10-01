@@ -43,3 +43,36 @@ One entry per non-trivial technical choice: the choice, what else was considered
 
 - **Choice:** teal (`#0f766e` light, `#5eead4` dark). Student had no preference.
 - **Reason:** calm, not "alert" colored, and passes WCAG AA on both themes (5.47:1 light, 12.77:1 dark, measured).
+
+### 2026-09-30: Hosted Supabase project, alongside PGlite
+
+- **Choice:** The team now has a hosted Supabase project. It's used when `DATA_ADAPTER=supabase`. PGlite stays the default for tests, CI, and the offline demo.
+- **Alternatives:** replace PGlite with Supabase everywhere (tests and CI would then need network access and secrets, and the demo would no longer run with "no external services beyond the local DB").
+- **Details:**
+  - Keys use Supabase's newer format: `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (`sb_publishable_…`, safe to expose; RLS protects the data) replaces the old anon key, and `SUPABASE_SECRET_KEY` (`sb_secret_…`, server-only) replaces the service-role key.
+  - No browser Supabase client. Students never touch the database, and staff screens go through server code, so the database is only reachable through code we control.
+  - `src/proxy.ts` refreshes the staff session on each request (Next 16 renamed middleware to proxy). It calls `supabase.auth.getClaims()`, which is what actually triggers the refresh, and copies the cache-control headers `@supabase/ssr` 0.12 passes to `setAll`. Supabase's dashboard quickstart snippet does neither.
+- **Migrations:** applied to the hosted project with the Supabase CLI, not by pasting into the SQL editor, so the hosted database can't drift from `supabase/migrations/`. The repo had no migration runner yet to reuse. PGlite reads the same files.
+
+### 2026-09-30: Database tests run on PGlite and, on demand, on hosted Supabase
+
+- **Problem:** PGlite doesn't have Supabase's `auth` schema, roles, or default privileges. The shim fakes them, so the local tests could pass while production behaves differently.
+- **Choice:**
+  1. The shim now copies Supabase's default privileges (new objects in `public` are granted to `anon` and `authenticated`). Local is now at least as open as production, never more locked down.
+  2. A schema guard test (`tests/db/schema-guard.test.ts`) checks the catalog: every table has RLS on, `anon` can touch nothing, and `authenticated` has exactly the listed privileges and functions.
+  3. The isolation test (`tests/db/isolation.test.ts`) works at the SQL level, so the same file runs on PGlite (default, CI) or the hosted project (`pnpm test:supabase`, opt-in, separate `SUPABASE_TEST_*` env vars).
+- **It found a real bug:** with Supabase's defaults copied in, the guard showed `anon` could use the `audit_log` ID sequence, because `0001_init.sql` revoked tables and functions but not sequences. Fixed before the migration was ever applied.
+- **Checked the tests catch problems:** temporarily setting the items policy to `using (true)` and removing the sequence revoke made both tests fail.
+- **Still not covered:** how Supabase turns a login token into a database identity (we set the same setting by hand in tests), and Storage policies (photos are on local disk for now). Both will be covered by adapter-level tests when the Supabase adapter and Storage exist.
+- **Dependencies:** `postgres` (postgres.js, dev only, no dependencies of its own) for the direct connection in `pnpm test:supabase`; `@electric-sql/pglite` (already chosen above); `supabase` CLI (dev only).
+
+### 2026-09-30: Trust rules inside a school, enforced in the database
+
+Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` itself because it had never been applied.
+
+- **A school always keeps an owner.** A trigger (`keep_an_owner`) rejects any delete or role change that would leave a school with no owner. Deleting the whole school still works. Side effect: a user who is the only owner of a school can't be deleted from Supabase Auth until another owner exists.
+- **Join codes come only from the database.** `generate_join_code()` (same alphabet as `codes.ts`, rejection sampling over `gen_random_uuid()` bytes) is called by `create_school` and the new owner-only `rotate_join_code`, which also writes to the audit log. Owners can no longer update `join_code` directly. The TypeScript `generateJoinCode` was removed so there's one generator, and a test checks the database uses the TypeScript alphabet.
+- **Records say who really did it.** `items.created_by` and `staff_invites.created_by` default to `auth.uid()` and RLS rejects any other value. Claim review fields are set by a trigger (`stamp_claim_review`) when the status changes; staff can only update `status`. Invites can't be edited (revoke and resend).
+- **No direct membership inserts.** Members only join through `create_school` (founder) or `accept_staff_invite` (an invite sent by an owner to that email). Promoting staff to owner has no path yet; it would need its own owner-only function.
+- **Alternative considered for claims:** a policy check `reviewed_by = auth.uid()`, like `audit_log`. Rejected because it would block a second staff member from marking an already-approved claim as picked up.
+- **Verified:** undoing each fix makes at least one test fail (6 failures in total).
