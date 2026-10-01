@@ -35,12 +35,12 @@ const AUTHENTICATED_TABLE_PRIVILEGES: Record<string, string[]> = {
   location_links: ["DELETE", "INSERT", "SELECT"],
   locations: ["DELETE", "INSERT", "SELECT", "UPDATE"],
   school_categories: ["DELETE", "INSERT", "SELECT", "UPDATE"],
-  school_members: ["DELETE", "INSERT", "SELECT"],
+  school_members: ["DELETE", "SELECT"],
   schools: ["SELECT"],
-  staff_invites: ["DELETE", "INSERT", "SELECT", "UPDATE"],
+  staff_invites: ["DELETE", "INSERT", "SELECT"],
 };
 
-const AUTHENTICATED_FUNCTIONS = ["accept_staff_invite", "create_school", "is_member", "is_owner"];
+const AUTHENTICATED_FUNCTIONS = ["accept_staff_invite", "create_school", "is_member", "is_owner", "rotate_join_code"];
 
 async function tablePrivileges(role: string): Promise<Record<string, string[]>> {
   const rows = await db.owner(

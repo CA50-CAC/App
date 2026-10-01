@@ -65,3 +65,14 @@ One entry per non-trivial technical choice: the choice, what else was considered
 - **Checked the tests catch problems:** temporarily setting the items policy to `using (true)` and removing the sequence revoke made both tests fail.
 - **Still not covered:** how Supabase turns a login token into a database identity (we set the same setting by hand in tests), and Storage policies (photos are on local disk for now). Both will be covered by adapter-level tests when the Supabase adapter and Storage exist.
 - **Dependencies:** `postgres` (postgres.js, dev only, no dependencies of its own) for the direct connection in `pnpm test:supabase`; `@electric-sql/pglite` (already chosen above); `supabase` CLI (dev only).
+
+### 2026-09-30: Trust rules inside a school, enforced in the database
+
+Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` itself because it had never been applied.
+
+- **A school always keeps an owner.** A trigger (`keep_an_owner`) rejects any delete or role change that would leave a school with no owner. Deleting the whole school still works. Side effect: a user who is the only owner of a school can't be deleted from Supabase Auth until another owner exists.
+- **Join codes come only from the database.** `generate_join_code()` (same alphabet as `codes.ts`, rejection sampling over `gen_random_uuid()` bytes) is called by `create_school` and the new owner-only `rotate_join_code`, which also writes to the audit log. Owners can no longer update `join_code` directly. The TypeScript `generateJoinCode` was removed so there's one generator, and a test checks the database uses the TypeScript alphabet.
+- **Records say who really did it.** `items.created_by` and `staff_invites.created_by` default to `auth.uid()` and RLS rejects any other value. Claim review fields are set by a trigger (`stamp_claim_review`) when the status changes; staff can only update `status`. Invites can't be edited (revoke and resend).
+- **No direct membership inserts.** Members only join through `create_school` (founder) or `accept_staff_invite` (an invite sent by an owner to that email). Promoting staff to owner has no path yet; it would need its own owner-only function.
+- **Alternative considered for claims:** a policy check `reviewed_by = auth.uid()`, like `audit_log`. Rejected because it would block a second staff member from marking an already-approved claim as picked up.
+- **Verified:** undoing each fix makes at least one test fail (6 failures in total).

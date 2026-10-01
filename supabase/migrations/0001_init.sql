@@ -72,7 +72,7 @@ create table public.staff_invites (
   email       text not null check (email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
   role        public.member_role not null default 'staff',
   token_hash  text not null unique,           -- sha256 hex of the invite token; the token itself is never stored
-  created_by  uuid references auth.users (id) on delete set null,
+  created_by  uuid default auth.uid() references auth.users (id) on delete set null,  -- RLS forces this to be the caller
   created_at  timestamptz not null default now(),
   expires_at  timestamptz not null default now() + interval '14 days',
   accepted_at timestamptz
@@ -127,7 +127,7 @@ create table public.items (
   owner_hint        text check (char_length(owner_hint) <= 120),  -- staff-only, never shown to students
   photo_path        text,                                         -- storage path, never a public URL
   photo_deleted_at  timestamptz,                                  -- set by the retention job
-  created_by        uuid references auth.users (id) on delete set null,
+  created_by        uuid default auth.uid() references auth.users (id) on delete set null,  -- RLS forces this to be the caller
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now(),
   resolved_at       timestamptz,                                  -- when status left 'available'/'claimed'
@@ -147,7 +147,7 @@ create table public.claims (
   contact_email   text check (contact_email is null or contact_email ~* '^[^@\s]+@[^@\s]+\.[^@\s]+$'),
   code_hash       text not null unique,     -- sha256 hex of the claim code; the code itself is never stored
   status          public.claim_status not null default 'pending',
-  reviewed_by     uuid references auth.users (id) on delete set null,
+  reviewed_by     uuid references auth.users (id) on delete set null,  -- set by the claims_stamp_review trigger, never by the app
   reviewed_at     timestamptz,
   picked_up_at    timestamptz,
   created_at      timestamptz not null default now(),
@@ -218,24 +218,93 @@ language sql stable security definer set search_path = '' as $$
   );
 $$;
 
+-- ---------- Join codes ----------
+-- Join codes are made here and nowhere else, so nobody can pick a weak one
+-- like AAAAAA. Same rules as CODE_ALPHABET in apps/web/src/lib/domain/codes.ts:
+-- 8 characters, no look-alikes (no 0/O, 1/I/L).
+--
+-- Randomness: gen_random_uuid() uses the server's secure random source. We only
+-- use the 12 bytes of a v4 UUID that are fully random (bytes 6-9 hold version
+-- and variant bits). Bytes 248-255 are thrown away so each of the 31 letters is
+-- equally likely (248 = 8 x 31). This is "rejection sampling", same as codes.ts.
+create function public.generate_join_code() returns text
+language plpgsql volatile set search_path = '' as $$
+declare
+  alphabet constant text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  code text := '';
+  bytes bytea;
+  b integer;
+begin
+  while char_length(code) < 8 loop
+    bytes := uuid_send(gen_random_uuid());
+    for i in 0..15 loop
+      continue when i between 6 and 9;
+      b := get_byte(bytes, i);
+      if b < 248 then
+        code := code || substr(alphabet, (b % 31) + 1, 1);
+      end if;
+      exit when char_length(code) = 8;
+    end loop;
+  end loop;
+  return code;
+end;
+$$;
+
 -- Creates a pending school and makes the caller its owner, in one step.
 -- Status is always 'pending_review' here; only the platform can approve.
+-- The join code is generated here; the caller can't choose it.
 create function public.create_school(
   p_slug text, p_name text, p_district text, p_time_zone text,
-  p_logo_path text, p_join_code text, p_needs_manual_review boolean
+  p_logo_path text, p_needs_manual_review boolean
 ) returns uuid
 language plpgsql security definer set search_path = '' as $$
 declare
   v_id uuid;
+  v_constraint text;
 begin
   if auth.uid() is null then
     raise exception 'not signed in';
   end if;
-  insert into public.schools (slug, name, district, time_zone, logo_path, join_code, needs_manual_review, created_by, setup_step)
-  values (p_slug, p_name, p_district, p_time_zone, p_logo_path, p_join_code, p_needs_manual_review, auth.uid(), 2)
-  returning id into v_id;
+  -- Two random 8-character codes clash about 1 time in 850 billion, but if it
+  -- happens, draw again rather than fail.
+  for attempt in 1..5 loop
+    begin
+      insert into public.schools (slug, name, district, time_zone, logo_path, join_code, needs_manual_review, created_by, setup_step)
+      values (p_slug, p_name, p_district, p_time_zone, p_logo_path, public.generate_join_code(), p_needs_manual_review, auth.uid(), 2)
+      returning id into v_id;
+      exit;
+    exception when unique_violation then
+      get stacked diagnostics v_constraint = constraint_name;
+      if v_constraint <> 'schools_join_code_key' or attempt = 5 then
+        raise;  -- for example, the slug is taken: let the app show that
+      end if;
+    end;
+  end loop;
   insert into public.school_members (school_id, user_id, role) values (v_id, auth.uid(), 'owner');
   return v_id;
+end;
+$$;
+
+-- Owners can replace their join code (for example, if a poster leaked).
+-- Returns the new code. The old one stops working immediately.
+create function public.rotate_join_code(p_school_id uuid) returns text
+language plpgsql security definer set search_path = '' as $$
+declare
+  v_code text;
+begin
+  if not public.is_owner(p_school_id) then
+    raise exception 'only an owner of this school can rotate its join code' using errcode = 'insufficient_privilege';
+  end if;
+  for attempt in 1..5 loop
+    begin
+      v_code := public.generate_join_code();
+      update public.schools set join_code = v_code where id = p_school_id;
+      insert into public.audit_log (school_id, actor_id, action) values (p_school_id, auth.uid(), 'join_code.rotated');
+      return v_code;
+    exception when unique_violation then
+      if attempt = 5 then raise; end if;
+    end;
+  end loop;
 end;
 $$;
 
@@ -261,6 +330,55 @@ begin
 end;
 $$;
 
+-- ---------- Triggers ----------
+
+-- A school must always keep at least one owner, or nobody could manage it.
+-- Row triggers declared AFTER run once the whole statement is done, so
+-- "remove both owners at once" is caught too. Deleting the school itself is
+-- fine: the school row is already gone when its members are removed, so the
+-- check is skipped.
+-- Side effect: a user who is the only owner of a school can't be deleted from
+-- Supabase Auth until another owner is added.
+create function public.keep_an_owner() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if exists (select 1 from public.schools s where s.id = old.school_id)
+     and not exists (
+       select 1 from public.school_members m
+       where m.school_id = old.school_id and m.role = 'owner'
+     ) then
+    raise exception 'a school must keep at least one owner' using errcode = 'check_violation';
+  end if;
+  return null;
+end;
+$$;
+
+create trigger school_members_keep_an_owner
+  after delete or update of role, school_id on public.school_members
+  for each row execute function public.keep_an_owner();
+
+-- Who reviewed a claim, and when, is recorded by the database from the
+-- signed-in user. Staff only change the status, so nobody can record a
+-- decision under a colleague's name.
+create function public.stamp_claim_review() returns trigger
+language plpgsql set search_path = '' as $$
+begin
+  if new.status is distinct from old.status then
+    if new.status in ('approved', 'rejected') then
+      new.reviewed_by := auth.uid();
+      new.reviewed_at := now();
+    elsif new.status = 'picked_up' then
+      new.picked_up_at := now();
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger claims_stamp_review
+  before update on public.claims
+  for each row execute function public.stamp_claim_review();
+
 -- ---------- Row Level Security ----------
 
 alter table public.schools           enable row level security;
@@ -279,14 +397,18 @@ create policy schools_select on public.schools for select to authenticated using
 create policy schools_update on public.schools for update to authenticated
   using (public.is_owner(id)) with check (public.is_owner(id));
 
--- Members: members see who else is on staff; owners add/remove.
+-- Members: members see who else is on staff; owners remove people.
+-- Nobody inserts directly. Membership only comes from create_school (the
+-- founder) or accept_staff_invite (everyone else), so every member either
+-- created the school or was invited by an owner and signed in with that email.
 create policy members_select on public.school_members for select to authenticated using (public.is_member(school_id));
-create policy members_insert on public.school_members for insert to authenticated with check (public.is_owner(school_id));
 create policy members_delete on public.school_members for delete to authenticated using (public.is_owner(school_id));
 
--- Invites: owners only.
-create policy invites_all on public.staff_invites for all to authenticated
-  using (public.is_owner(school_id)) with check (public.is_owner(school_id));
+-- Invites: owners only, and an invite is always recorded as sent by whoever sent it.
+create policy invites_select on public.staff_invites for select to authenticated using (public.is_owner(school_id));
+create policy invites_insert on public.staff_invites for insert to authenticated
+  with check (public.is_owner(school_id) and created_by = auth.uid());
+create policy invites_delete on public.staff_invites for delete to authenticated using (public.is_owner(school_id));
 
 -- Locations, links, category defaults: members read, owners write.
 create policy locations_select on public.locations for select to authenticated using (public.is_member(school_id));
@@ -301,7 +423,8 @@ create policy categories_write  on public.school_categories for all    to authen
 
 -- Items: any staff member of the school can read, add, and update. No hard deletes (use status 'removed').
 create policy items_select on public.items for select to authenticated using (public.is_member(school_id));
-create policy items_insert on public.items for insert to authenticated with check (public.is_member(school_id));
+create policy items_insert on public.items for insert to authenticated
+  with check (public.is_member(school_id) and created_by = auth.uid());
 create policy items_update on public.items for update to authenticated
   using (public.is_member(school_id)) with check (public.is_member(school_id));
 
@@ -322,15 +445,15 @@ create policy audit_insert on public.audit_log for insert to authenticated
 
 revoke all on all tables in schema public from anon, authenticated;
 revoke all on all sequences in schema public from anon, authenticated;  -- Supabase grants these by default too
-revoke all on all functions in schema public from public, anon;
+revoke all on all functions in schema public from public, anon, authenticated;  -- then grant back only the ones below
 
 grant select on public.schools to authenticated;
-grant update (name, district, time_zone, logo_path, setup_step, join_code,
+grant update (name, district, time_zone, logo_path, setup_step,  -- not join_code: use rotate_join_code()
               photo_retention_days, donate_after_days, pickup_location, pickup_hours, launched_at)
   on public.schools to authenticated;
 
-grant select, insert, delete on public.school_members to authenticated;
-grant select, insert, update, delete on public.staff_invites to authenticated;
+grant select, delete on public.school_members to authenticated;
+grant select, insert, delete on public.staff_invites to authenticated;  -- to change an invite, revoke and resend
 grant select, insert, update, delete on public.locations to authenticated;
 grant select, insert, delete on public.location_links to authenticated;
 grant select, insert, update, delete on public.school_categories to authenticated;
@@ -341,14 +464,17 @@ grant update (status, category, colors, note, found_location_id, found_at, visib
   on public.items to authenticated;
 
 grant select on public.claims to authenticated;
-grant update (status, reviewed_by, reviewed_at, picked_up_at) on public.claims to authenticated;
+grant update (status) on public.claims to authenticated;  -- the trigger fills in reviewer and times
 
 grant select, insert on public.audit_log to authenticated;
 
 grant execute on function public.is_member(uuid), public.is_owner(uuid),
-  public.create_school(text, text, text, text, text, text, boolean),
-  public.accept_staff_invite(text)
+  public.create_school(text, text, text, text, text, boolean),
+  public.accept_staff_invite(text),
+  public.rotate_join_code(uuid)
   to authenticated;
+-- Deliberately NOT granted: generate_join_code (only called inside the
+-- functions above) and the trigger functions (triggers don't need it).
 
 -- The student view is read by the server (service role) only.
 revoke all on public.student_items from anon, authenticated;

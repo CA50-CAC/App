@@ -57,7 +57,6 @@ describe(`tenant isolation (${process.env.TEST_DB ?? "pglite"})`, () => {
       ["update public.items set note = 'changed' where id = $1 returning id", (x: SchoolFixture) => x.itemId],
       ["update public.claims set status = 'rejected' where id = $1 returning id", (x: SchoolFixture) => x.claimId],
       ["update public.locations set name = 'Moved' where id = $1 returning id", (x: SchoolFixture) => x.locationId],
-      ["update public.staff_invites set email = 'x@example.com' where id = $1 returning id", (x: SchoolFixture) => x.inviteId],
       ["update public.school_categories set default_visibility = 'staff_only' where school_id = $1 returning school_id", (x: SchoolFixture) => x.id],
     ] as const;
 
@@ -82,7 +81,6 @@ describe(`tenant isolation (${process.env.TEST_DB ?? "pglite"})`, () => {
   it.each<[string, Insert]>([
     ["items", () => ["insert into public.items (school_id, category, found_location_id, visibility) values ($1, 'keys', $2, 'limited')", [s.b.id, s.b.locationId]]],
     ["locations", () => ["insert into public.locations (school_id, name) values ($1, 'Roof')", [s.b.id]]],
-    ["school_members (make myself owner of B)", () => ["insert into public.school_members (school_id, user_id, role) values ($1, $2, 'owner')", [s.b.id, s.a.ownerId]]],
     ["school_categories", () => ["insert into public.school_categories (school_id, category, default_visibility) values ($1, 'keys', 'full')", [s.b.id]]],
     ["staff_invites", () => ["insert into public.staff_invites (school_id, email, token_hash) values ($1, 'spy@example.com', $2)", [s.b.id, `spy-${db.runId}`]]],
     ["audit_log", () => ["insert into public.audit_log (school_id, actor_id, action) values ($1, $2, 'item.removed')", [s.b.id, s.a.ownerId]]],
@@ -142,6 +140,13 @@ describe(`tenant isolation (${process.env.TEST_DB ?? "pglite"})`, () => {
     ).rejects.toThrow(NO_PRIVILEGE);
   });
 
+  it("an owner of School A can't rotate School B's join code or remove B's staff", async () => {
+    await expect(db.asUser(s.a.ownerId, (q) => q("select public.rotate_join_code($1)", [s.b.id]))).rejects.toThrow(/only an owner/);
+    await db.asUser(s.a.ownerId, async (q) => {
+      expect(await q("delete from public.school_members where school_id = $1 returning user_id", [s.b.id])).toHaveLength(0);
+    });
+  });
+
   it("an invite for School B can't be accepted by someone it wasn't sent to", async () => {
     const [row] = await db.asUser(s.a.ownerId, (q) => q("select public.accept_staff_invite($1) as school_id", [`invite-${db.runId}-b`]));
     expect(row.school_id).toBeNull();
@@ -149,9 +154,8 @@ describe(`tenant isolation (${process.env.TEST_DB ?? "pglite"})`, () => {
 
   it("a signed-in user who creates a school starts pending, as its owner", async () => {
     await db.asUser(s.a.ownerId, async (q) => {
-      const [{ id }] = await q("select public.create_school($1, 'New School', null, 'America/Los_Angeles', null, $2, false) as id", [
+      const [{ id }] = await q("select public.create_school($1, 'New School', null, 'America/Los_Angeles', null, false) as id", [
         `zz-test-${db.runId}-new`,
-        `N${db.runId.toUpperCase()}`,
       ]);
       const [school] = await q("select status from public.schools where id = $1", [id]);
       expect(school.status).toBe("pending_review");
@@ -164,7 +168,7 @@ describe(`tenant isolation (${process.env.TEST_DB ?? "pglite"})`, () => {
     await expect(db.asAnon((q) => q("select id from public.items"))).rejects.toThrow(NO_PRIVILEGE);
     await expect(db.asAnon((q) => q("select id from public.student_items"))).rejects.toThrow(NO_PRIVILEGE);
     await expect(
-      db.asAnon((q) => q("select public.create_school('x', 'X School', null, 'UTC', null, 'XXXXXXXX', false)")),
+      db.asAnon((q) => q("select public.create_school('x', 'X School', null, 'UTC', null, false)")),
     ).rejects.toThrow(NO_PRIVILEGE);
   });
 

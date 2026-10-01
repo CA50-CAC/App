@@ -1,7 +1,7 @@
 /**
  * Two schools with a bit of everything, created as the database owner.
  *
- * School A has an owner and a staff member; School B has an owner. Tests then
+ * School A has an owner and a staff member; School B has two owners. Tests then
  * act as those users and check what Row Level Security lets them see and do.
  */
 import { TEST_SLUG_PREFIX, type TestDb } from "./harness";
@@ -17,7 +17,7 @@ export interface SchoolFixture {
 
 export interface TwoSchools {
   a: SchoolFixture & { staffId: string };
-  b: SchoolFixture;
+  b: SchoolFixture & { coOwnerId: string };
 }
 
 async function seedSchool(db: TestDb, key: "a" | "b", ownerId: string): Promise<SchoolFixture> {
@@ -26,8 +26,8 @@ async function seedSchool(db: TestDb, key: "a" | "b", ownerId: string): Promise<
 
   const [school] = await q(
     `insert into public.schools (slug, name, join_code, status, setup_step, created_by)
-     values ($1, $2, $3, 'approved', 7, $4) returning id`,
-    [`${TEST_SLUG_PREFIX}${tag}`, `Test School ${key.toUpperCase()}`, `T${db.runId.toUpperCase()}${key.toUpperCase()}`, ownerId],
+     values ($1, $2, public.generate_join_code(), 'approved', 7, $3) returning id`,
+    [`${TEST_SLUG_PREFIX}${tag}`, `Test School ${key.toUpperCase()}`, ownerId],
   );
   const schoolId = school.id as string;
 
@@ -80,15 +80,17 @@ async function seedSchool(db: TestDb, key: "a" | "b", ownerId: string): Promise<
 
 export async function seedTwoSchools(db: TestDb): Promise<TwoSchools> {
   const email = (who: string) => `${TEST_SLUG_PREFIX}${db.runId}-${who}@example.com`;
-  const [ownerA, staffA, ownerB] = [
+  const [ownerA, staffA, ownerB, coOwnerB] = [
     await db.createUser(email("owner-a")),
     await db.createUser(email("staff-a")),
     await db.createUser(email("owner-b")),
+    await db.createUser(email("co-owner-b")),
   ];
 
   const a = await seedSchool(db, "a", ownerA);
   const b = await seedSchool(db, "b", ownerB);
   await db.owner("insert into public.school_members (school_id, user_id, role) values ($1, $2, 'staff')", [a.id, staffA]);
+  await db.owner("insert into public.school_members (school_id, user_id, role) values ($1, $2, 'owner')", [b.id, coOwnerB]);
 
-  return { a: { ...a, staffId: staffA }, b };
+  return { a: { ...a, staffId: staffA }, b: { ...b, coOwnerId: coOwnerB } };
 }

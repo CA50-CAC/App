@@ -2,28 +2,14 @@ import { describe, expect, it } from "vitest";
 import {
   CODE_ALPHABET,
   generateClaimCode,
-  generateJoinCode,
   hashCode,
   normalizeCode,
   slugify,
 } from "./codes";
 
-describe("join codes", () => {
-  it("are 8 characters from the unambiguous alphabet", () => {
-    for (let i = 0; i < 200; i++) {
-      const code = generateJoinCode();
-      expect(code).toMatch(/^[A-Z2-9]{8}$/);
-      for (const ch of code) expect(CODE_ALPHABET).toContain(ch);
-    }
-  });
-
+describe("join codes (generated in the database; see tests/db/school-roles.test.ts)", () => {
   it("never use look-alike characters", () => {
     for (const ch of "0O1IL") expect(CODE_ALPHABET).not.toContain(ch);
-  });
-
-  it("are not repeated in practice", () => {
-    const seen = new Set(Array.from({ length: 1000 }, generateJoinCode));
-    expect(seen.size).toBe(1000);
   });
 
   it("normalize user input", () => {

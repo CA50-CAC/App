@@ -151,15 +151,16 @@ export interface StudentItemFilters {
 // ---------- Repositories ----------
 
 export interface StaffRepo {
-  /** Creates a pending school with the caller as owner. Returns the new school. */
-  createSchool(input: SchoolProfileInput & { slug: string; joinCode: string; needsManualReview: boolean }): Promise<School>;
+  /** Creates a pending school with the caller as owner. The database generates the join code. */
+  createSchool(input: SchoolProfileInput & { slug: string; needsManualReview: boolean }): Promise<School>;
   /** Schools the caller belongs to. */
   mySchools(): Promise<Array<School & { role: MemberRole }>>;
   getSchool(schoolId: string): Promise<School | null>;
   updateProfile(schoolId: string, input: SchoolProfileInput): Promise<void>;
   updatePolicies(schoolId: string, input: PoliciesInput): Promise<void>;
   setSetupStep(schoolId: string, step: number): Promise<void>;
-  rotateJoinCode(schoolId: string, newCode: string): Promise<void>;
+  /** Owners only. The database generates the new code and returns it. */
+  rotateJoinCode(schoolId: string): Promise<string>;
   markLaunched(schoolId: string): Promise<void>;
 
   listLocations(schoolId: string): Promise<Location[]>;
