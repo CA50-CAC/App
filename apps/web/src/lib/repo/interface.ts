@@ -4,7 +4,7 @@
  *
  * Why split it into "who is asking"?
  *
- * - `forStaff(userId)` acts AS that staff user. In Postgres this runs with Row
+ * - `forStaff(actor)` acts AS that staff user. In Postgres this runs with Row
  *   Level Security on, so even a bug in our code can't read another school's rows.
  * - `forStudent(schoolId)` is for anonymous students. The school id comes from
  *   the signed session cookie, never from the request body. It can only read
@@ -12,9 +12,13 @@
  * - `platform()` is for platform admins (approve schools).
  * - `system()` is for trusted server jobs: join-code lookup, seeding, retention.
  *
- * Two adapters are planned:
- * - `pglite`: Postgres running inside Node (no Docker). Used for the prototype and tests.
- * - `supabase`: the real deployment. Same SQL migrations, same RLS policies.
+ * Two adapters, one contract (tests/repo/contract.ts runs against both):
+ * - `pglite` (./pglite.ts): Postgres running inside Node (no Docker). Tests, dev, demo.
+ * - `supabase` (./supabase.ts): the real deployment. Same SQL migrations, same RLS policies.
+ *
+ * Errors the app is expected to handle (a slug that's taken, a location still in
+ * use, an item a student can't see) are thrown as `RepoError` with a `code`, so
+ * both adapters fail the same way.
  */
 import type { CategoryDefaults } from "@/lib/domain/categories";
 import type {
@@ -28,6 +32,36 @@ import type {
   Visibility,
 } from "@/lib/domain/types";
 import type { StudentItem } from "@/lib/domain/visibility";
+
+// ---------- Errors ----------
+
+export type RepoErrorCode = "not_found" | "conflict" | "forbidden" | "invalid";
+
+export class RepoError extends Error {
+  constructor(
+    readonly code: RepoErrorCode,
+    message: string,
+  ) {
+    super(message);
+    this.name = "RepoError";
+  }
+}
+
+// ---------- Who is asking ----------
+
+/**
+ * A signed-in staff member. `accessToken` is their Supabase login token, which
+ * the Supabase adapter sends with every query so RLS knows who is asking.
+ * The PGlite adapter only needs the user id (it sets the same database setting
+ * Supabase would set from the token).
+ */
+export interface StaffActor {
+  userId: string;
+  accessToken: string | null;
+}
+
+/** Turns a storage path into a short-lived URL a browser can load. */
+export type PhotoUrlFn = (photoPath: string) => Promise<string | null>;
 
 // ---------- Shapes ----------
 
@@ -78,6 +112,7 @@ export interface Member {
   userId: string;
   email: string;
   role: MemberRole;
+  createdAt: string;
 }
 
 export interface StaffInvite {
@@ -130,6 +165,7 @@ export interface NewItemInput {
   foundAt: string;
   visibility: Visibility;
   ownerHint: string | null;
+  staffNote: string | null;
   photoPath: string | null;
 }
 
@@ -164,7 +200,11 @@ export interface StaffRepo {
   markLaunched(schoolId: string): Promise<void>;
 
   listLocations(schoolId: string): Promise<Location[]>;
-  /** Replaces the full list, keeping ids for names that already exist. */
+  /**
+   * Replaces the full list, in this order, keeping ids for names that already
+   * exist. `links` are pairs of names. Throws RepoError("conflict") if a
+   * location that items still point to would be removed.
+   */
   saveLocations(schoolId: string, names: string[], links: Array<[string, string]>): Promise<Location[]>;
   listLocationLinks(schoolId: string): Promise<LocationLink[]>;
 
@@ -185,7 +225,9 @@ export interface StaffRepo {
   /** Removal is logged to the audit log. */
   setItemStatus(schoolId: string, itemIds: string[], status: ItemStatus, reason?: string): Promise<void>;
 
+  /** Oldest first, so the queue is worked in order. */
   listClaims(schoolId: string, statuses?: ClaimStatus[]): Promise<Claim[]>;
+  getClaim(schoolId: string, claimId: string): Promise<Claim | null>;
   setClaimStatus(schoolId: string, claimId: string, status: ClaimStatus): Promise<void>;
 }
 
@@ -195,7 +237,7 @@ export interface StudentRepo {
   /** Only available, non-staff-only items, already projected to the student view. */
   listItems(filters?: StudentItemFilters): Promise<StudentItem[]>;
   getItem(itemId: string): Promise<StudentItem | null>;
-  /** Fails if the item isn't visible to students. Stores only the hash of the claim code. */
+  /** Throws RepoError("not_found") if the item isn't visible to students. Stores only the hash of the claim code. */
   createClaim(input: { itemId: string; claimantDetail: string; contactEmail: string | null; codeHash: string }): Promise<void>;
   getClaimByCodeHash(codeHash: string): Promise<ClaimStatusView | null>;
 }
@@ -218,7 +260,8 @@ export interface SystemRepo {
 }
 
 export interface Repositories {
-  forStaff(userId: string): StaffRepo;
+  forStaff(actor: StaffActor): StaffRepo;
+  /** `schoolId` must come from the signed student session, never from the request. */
   forStudent(schoolId: string): StudentRepo;
   platform(): PlatformRepo;
   system(): SystemRepo;

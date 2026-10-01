@@ -5,6 +5,9 @@
  * Contrast targets: body text and the accent on the background both meet WCAG AA.
  *   light: accent #0f766e on #ffffff ≈ 5.5:1
  *   dark:  accent #5eead4 on #0b1215 ≈ 12.8:1
+ * Status colors (danger, success, warning) are used as text on their own
+ * "-soft" background and on the page background; each pair meets 4.5:1
+ * (checked by src/app/contrast.test.ts).
  */
 :root {
   --background: #ffffff;
@@ -14,7 +17,13 @@
   --border: #dde3e5;
   --accent: #0f766e;
   --accent-foreground: #ffffff;
+  --accent-soft: #e6f4f2;
   --danger: #b42318;
+  --danger-soft: #fdecea;
+  --success: #166534;
+  --success-soft: #e8f5ec;
+  --warning: #a15c07;
+  --warning-soft: #fdf3e1;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -26,7 +35,13 @@
     --border: #26343a;
     --accent: #5eead4;
     --accent-foreground: #04201d;
+    --accent-soft: #12302d;
     --danger: #f97066;
+    --danger-soft: #3a1714;
+    --success: #4ade80;
+    --success-soft: #10291a;
+    --warning: #fbbf24;
+    --warning-soft: #33260a;
   }
 }
 
@@ -38,7 +53,13 @@
   --color-border: var(--border);
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
   --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -46,6 +67,23 @@
 body {
   background: var(--background);
   color: var(--foreground);
+}
+
+/* One visible focus style everywhere, for keyboard users. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Skeleton shimmer for loading states (turned off by reduced motion below). */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.skeleton {
+  background: var(--border);
+  border-radius: 0.75rem;
+  animation: skeleton-pulse 1.4s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {

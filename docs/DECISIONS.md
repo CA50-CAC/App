@@ -81,3 +81,61 @@ Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` its
 
 - **Choice:** LostBox replaces the working title Boomerang everywhere: the app name string (`app.name` in `en.ts`), the package names (`lostbox`, `@lostbox/web`), the local Supabase `project_id`, and the README, `SPEC.md`, and `CLAUDE.md` titles.
 - **Not changed:** the header comment in `supabase/migrations/0001_init.sql` still says Boomerang. That file is already applied to the hosted project and is marked "don't edit".
+
+### 2026-10-01: Repository adapters and one shared contract test
+
+- **Choice:** `src/lib/repo/pglite.ts` and `src/lib/repo/supabase.ts` both implement `repo/interface.ts`. One test suite (`tests/repo/contract.ts`, 39 tests) runs against PGlite in CI and against a hosted project with `pnpm test:supabase`.
+- **Interface changes:** `forStaff(userId)` became `forStaff({ userId, accessToken })`, because on Supabase the database learns who is asking from the login token, not from an id we pass. Expected failures are thrown as `RepoError` with a code (`not_found`, `conflict`, `forbidden`, `invalid`) so both adapters fail the same way. Added `getClaim`, `Member.createdAt`, and `StaffItem.staffNote`.
+- **Who runs as whom:** staff calls run as `authenticated` with RLS (PGlite switches role inside a transaction; Supabase sends the user's token with the publishable key). Student, platform, and system calls run as the database owner / secret key, so every student query filters by the school id from the signed session and reads only `student_items`.
+- **Supabase adapter limits:** Supabase's API has no multi-statement transactions, so `saveLocations` and `setItemStatus` are several calls in a row. A failure halfway leaves a partial change (for example, locations saved but links not). Acceptable for now; a database function would fix it if it ever matters.
+- **Checked the tests catch problems:** removing the school filter from a student query, or adding `photoUrl`/`note` keys to Limited items, made 4 contract tests fail.
+- **Not yet run:** the contract on hosted Supabase. It needs a test project with `0002` applied and `SUPABASE_TEST_PUBLISHABLE_KEY` set.
+
+### 2026-10-01: Migration 0002 (staff notes, rate limits, member emails, photo bucket)
+
+- **`items.staff_note`** for private notes. `owner_hint` wasn't reused because any value in it shows students a "has a name label" badge, which would reveal that a private note exists.
+- **`photo_in_school_folder`** check: a photo path must start with the item's own school id. Staff can update items directly through Supabase's API, so without it someone could point an item at another school's photo. Added `NOT VALID` so existing rows aren't re-checked.
+- **`hit_rate_limit()`** does "count and check" in one statement. A read-then-write from the app through the API would let two simultaneous requests both pass. Server only (revoked from `anon` and `authenticated`).
+- **`list_school_members()`**: on Supabase, signed-in users can't read `auth.users`, so this `security definer` function returns emails only for schools the caller belongs to.
+- **Photo bucket `item-photos`:** private, with no Storage policies at all. Only the server (secret key) reads and writes photos; browsers get short-lived signed URLs, and students only for Full items. Created by the migration only where a `storage` schema exists, so PGlite skips it.
+- **Alternatives:** Storage RLS policies so staff upload straight from the browser. Rejected because EXIF must be stripped on the server before storage anyway.
+
+### 2026-10-01: Staff sign-in flow
+
+- **Choice:** Magic links behind `AuthProvider`. Locally (PGlite), our own one-time tokens (hashed in `auth.magic_links`, 15 minutes, single use) and a signed `lb_staff` cookie; the link is shown on screen, and only in development or demo mode. On Supabase, `signInWithOtp` sends the email and `@supabase/ssr` keeps the session; `src/proxy.ts` refreshes it.
+- **Sign-in happens on a button press** at `/auth/confirm`, not when the link opens. Some school email systems open every link to scan it, which would use up a one-time link.
+- **Both Supabase link styles work:** `token_hash` (our recommended template; any device) and `code` (Supabase's default template; same browser only). See `docs/DEPLOY.md`.
+- **The proxy redirects signed-out visitors** away from `/admin` and `/setup/2-7`, but it isn't the security boundary: every page and action calls `requireStaff()`, and RLS checks again.
+- **Alternatives:** Supabase Auth locally too (needs Docker or network); passwords (CLAUDE.md says no).
+
+### 2026-10-01: Student sessions and the school id
+
+- **Choice:** Joining sets a signed `lb_student` cookie with the school id and slug (30 days). Student pages read the school only from it; the slug in the URL must match but never chooses the school. Pending schools' codes answer "not found", the same as a wrong code.
+
+### 2026-10-01: Photos
+
+- **Choice:** sharp on the server decodes, rotates, re-encodes to JPEG (max 1600px), which drops all metadata. The browser also shrinks photos first, because Vercel caps request bodies at 4.5MB; the server never trusts that step.
+- **Storage:** private Supabase bucket in production; `.data/uploads` locally, served by `/api/photos` only with an HMAC-signed, expiring URL. SVGs are only ever our own generated demo pictures (uploads are always re-encoded to JPEG) and are served with a sandboxing CSP.
+- **Face blur:** not built (out of scope); a marked TODO sits in `photo-input.tsx` where on-device blur belongs. Not faked.
+- **Dependency:** `sharp` (already installed by Next.js for image optimization; now listed explicitly).
+
+### 2026-10-01: Staff invites show a link instead of emailing
+
+- **Choice:** Owners create an invite and get a one-time link to send themselves (only its hash is stored). There's no email service in scope, and Supabase's built-in email can't reach arbitrary addresses. The invitee signs in with the invited email and accepts; `accept_staff_invite` checks the email matches.
+
+### 2026-10-01: Claim decisions change the item too
+
+- **Choice:** `decideClaim()` (`src/lib/services/claims.ts`): approve → claim approved and item `claimed` (off the gallery); reject → item back to `available` if no other approved claim; picked up → claim `picked_up` and item `returned`. Several calls in a row rather than one transaction (see the adapter note above).
+
+### 2026-10-01: Demo school
+
+- **Choice:** `seedDemo()` deletes and rebuilds Demo High School with a fixed id, so student cookies survive a reset. Demo donate-after is 21 days so the "older than donate-after" items fit inside "the last 30 days". `DEMO_MODE` defaults on only for PGlite in development; production needs `DEMO_MODE=true` explicitly.
+
+### 2026-10-01: Testing in a browser
+
+- **Choice:** Playwright and `@axe-core/playwright` (dev only) for end-to-end and accessibility checks against a production build, with the demo seeded into `.data-e2e/`. A new CI job runs them. Another CI job builds with the Supabase adapter and a fake secret, then fails if the secret appears in browser files.
+- **`tsx`** (dev only) runs `scripts/seed-demo.ts` with the `@/` import paths. pnpm's `allowBuilds` now lists `esbuild: false` (its install script only re-checks the prebuilt binary).
+
+### 2026-10-01: Out of scope, as agreed
+
+AI matching, auto-fill, auto-blur, notifications, analytics, lost-item reports, the platform approval page, the poster page, the donate list, the retention job (the data-layer methods for it exist and are tested), logo upload, location "nearby" links UI, and QR codes on the launch screen.

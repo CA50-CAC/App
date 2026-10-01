@@ -6,3 +6,4 @@ packages:
 allowBuilds:
   sharp: false
   unrs-resolver: false
+  esbuild: false  # tsx works with esbuild's prebuilt binary; its install script only re-checks it

@@ -7,13 +7,15 @@
   },
   "scripts": {
     "dev": "pnpm --filter @lostbox/web dev",
+    "seed:demo": "pnpm --filter @lostbox/web seed:demo",
     "build": "pnpm --filter @lostbox/web build",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck",
     "test": "pnpm -r test",
     "test:supabase": "pnpm --filter @lostbox/web test:supabase",
     "db:status": "supabase migration list --linked",
-    "db:push": "supabase db push --linked"
+    "db:push": "supabase db push --linked",
+    "test:e2e": "pnpm --filter @lostbox/web test:e2e"
   },
   "devDependencies": {
     "supabase": "^2.118.0"

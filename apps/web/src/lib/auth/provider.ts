@@ -14,6 +14,12 @@ export interface StaffSession {
   userId: string;
   email: string;
   isPlatformAdmin: boolean;
+  /**
+   * The Supabase login token, passed to the data layer so Row Level Security
+   * knows who is asking. Null with the local provider. Server-side only: never
+   * send it to the browser.
+   */
+  accessToken: string | null;
 }
 
 export interface MagicLinkResult {
@@ -25,9 +31,13 @@ export interface MagicLinkResult {
 }
 
 export interface AuthProvider {
-  sendMagicLink(email: string, redirectTo: string): Promise<MagicLinkResult>;
-  /** Exchanges a one-time token for a session. Returns null if the token is invalid or used. */
-  verifyMagicLink(token: string): Promise<StaffSession | null>;
+  /** `next` is the in-app path to land on after signing in (already checked by safeNextPath). */
+  sendMagicLink(email: string, next: string): Promise<MagicLinkResult>;
+  /**
+   * Redeems the link's query parameters for a session and sets the session
+   * cookies. Returns null if the link is invalid, expired, or already used.
+   */
+  verifyMagicLink(params: URLSearchParams): Promise<StaffSession | null>;
   getStaffSession(): Promise<StaffSession | null>;
   signOut(): Promise<void>;
 }
@@ -40,4 +50,17 @@ export function isPlatformAdminEmail(email: string, envValue = process.env.PLATF
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean)
     .includes(target);
+}
+
+/**
+ * Where to go after signing in. Only same-site paths are allowed, so a link
+ * like /login?next=https://evil.example can't bounce someone to another site.
+ */
+export function safeNextPath(next: string | null | undefined, fallback = "/admin"): string {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.includes("\\")) return fallback;
+  return next;
+}
+
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
 }
