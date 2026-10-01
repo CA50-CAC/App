@@ -53,7 +53,61 @@ export const en = {
 
   "item.hasNameLabel": "Has a name label",
 
-  "home.placeholder": "The app is being built. Check back soon.",
+  "common.saving": "Saving…",
+  "common.save": "Save",
+  "common.cancel": "Cancel",
+  "common.back": "Back",
+  "common.continue": "Continue",
+  "common.optional": "optional",
+  "common.error.generic": "Something went wrong on our side. Please try again.",
+  "common.error.rateLimited": "Too many tries. Please wait a few minutes and try again.",
+  "common.skipToContent": "Skip to main content",
+  "common.demoBanner": "Demo mode: sample data only. Nothing here is real.",
+
+  "home.title": "Lost something at school?",
+  "home.lead": "Enter your school's join code to see what's been found. No account needed.",
+  "home.staffTitle": "School staff",
+  "home.staffSignIn": "Staff sign in",
+  "home.setup": "Set up LostBox for your school",
+  "home.demoHint": "Try the demo school with code {code}.",
+
+  "join.label": "Join code",
+  "join.help": "8 letters and numbers, from a poster or your school's announcement.",
+  "join.submit": "Find my school",
+  "join.pending": "Looking…",
+  "join.error.notFound": "We couldn't find a school with that code. Check it and try again.",
+  "join.error.empty": "Enter your school's join code.",
+
+  "login.title": "Staff sign in",
+  "login.lead": "We'll email you a sign-in link. No password needed.",
+  "login.email": "School email",
+  "login.submit": "Email me a sign-in link",
+  "login.pending": "Sending…",
+  "login.sent.title": "Check your email",
+  "login.sent.body": "If {email} can sign in, a link is on its way. It works once and expires in 15 minutes.",
+  "login.devLink.title": "Development sign-in link",
+  "login.devLink.body": "There's no email in development and demo mode, so here is the link that would have been sent:",
+  "login.devLink.open": "Open sign-in link",
+  "login.demoHint": "Demo staff account: {email}",
+  "login.error.email": "Enter a valid email address.",
+  "login.error.link": "That sign-in link didn't work. It may have expired or already been used. Request a new one below.",
+
+  "confirm.title": "Finish signing in",
+  "confirm.lead": "Press the button to sign in to LostBox on this device.",
+  "confirm.submit": "Sign in",
+  "confirm.pending": "Signing in…",
+
+  "nav.items": "Items",
+  "nav.newItem": "Add item",
+  "nav.claims": "Claims",
+  "nav.settings": "Settings",
+  "nav.signOut": "Sign out",
+  "nav.signedInAs": "Signed in as {email}",
+  "nav.staffNav": "Staff",
+
+  "admin.pending.title": "Waiting for approval",
+  "admin.pending.body": "You can set everything up and add items now. Students can join once LostBox approves your school.",
+  "admin.error.owner": "Only a school owner can do that.",
 } as const;
 
 export type MessageKey = keyof typeof en;

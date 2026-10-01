@@ -14,7 +14,10 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 import type { SupabaseConfig } from "./config";
 
-export async function refreshSupabaseSession(request: NextRequest, config: SupabaseConfig): Promise<NextResponse> {
+export async function refreshSupabaseSession(
+  request: NextRequest,
+  config: SupabaseConfig,
+): Promise<{ response: NextResponse; signedIn: boolean }> {
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(config.url, config.publishableKey, {
@@ -34,7 +37,7 @@ export async function refreshSupabaseSession(request: NextRequest, config: Supab
   });
 
   // Don't put code between createServerClient and this call.
-  await supabase.auth.getClaims();
+  const { data } = await supabase.auth.getClaims();
 
-  return response;
+  return { response, signedIn: Boolean(data?.claims?.sub) };
 }
