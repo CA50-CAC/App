@@ -36,18 +36,30 @@ export function readEnv(env: Record<string, string | undefined> = process.env): 
   const demoMode =
     env.DEMO_MODE === "true" || (env.DEMO_MODE === undefined && dataAdapter === "pglite" && !isProduction);
 
-  let sessionSecret = env.SESSION_SECRET ?? "";
-  if (!sessionSecret && !isProduction) sessionSecret = DEV_SESSION_SECRET;
-  if (sessionSecret.length < 32) {
-    throw new Error("SESSION_SECRET must be set to at least 32 random characters. See .env.example.");
-  }
-  if (isProduction && sessionSecret === DEV_SESSION_SECRET) {
-    throw new Error("SESSION_SECRET is the development default. Set a real one for production.");
-  }
+  // Checked when first used, not here, so `next build` can prerender static
+  // pages (like the 404 page) without the secret.
+  const sessionSecret = () => {
+    const secret = env.SESSION_SECRET || (isProduction ? "" : DEV_SESSION_SECRET);
+    if (secret.length < 32) {
+      throw new Error("SESSION_SECRET must be set to at least 32 random characters. See .env.example.");
+    }
+    if (isProduction && secret === DEV_SESSION_SECRET) {
+      throw new Error("SESSION_SECRET is the development default. Set a real one for production.");
+    }
+    return secret;
+  };
 
   const appUrl = (env.APP_URL || (env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000")).replace(/\/+$/, "");
 
-  return { dataAdapter, demoMode, appUrl, sessionSecret, isProduction };
+  return {
+    dataAdapter,
+    demoMode,
+    appUrl,
+    isProduction,
+    get sessionSecret() {
+      return sessionSecret();
+    },
+  };
 }
 
 let cached: AppEnv | null = null;

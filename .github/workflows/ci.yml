@@ -20,6 +20,26 @@ jobs:
       - run: pnpm lint
       - run: pnpm test
 
+  secrets:
+    # Builds in production mode (Supabase adapter) with a fake secret key and
+    # checks it never reaches files served to browsers.
+    runs-on: ubuntu-latest
+    env:
+      DATA_ADAPTER: supabase
+      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_fake
+      SUPABASE_SECRET_KEY: sb_secret_ci_fake_value_do_not_use
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: node apps/web/scripts/check-client-bundle.mjs
+
   e2e:
     # Full loop, privacy, wizard, and accessibility checks in a real browser,
     # against a production build with the seeded demo school. No secrets needed.
