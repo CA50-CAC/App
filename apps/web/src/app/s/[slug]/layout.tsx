@@ -12,21 +12,21 @@ export default async function StudentLayout({ children, params }: LayoutProps<"/
   const { school } = await getStudentContext(slug);
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border">
+      <header className="sticky top-0 z-20 border-b border-border/70 bg-background/80 backdrop-blur-md">
         <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3">
           <Link href={`/s/${slug}`} className="flex min-w-0 items-center gap-2 rounded-lg">
             <Logo withName={false} />
-            <span className="truncate font-semibold">{school.name}</span>
+            <span className="truncate text-lg font-semibold tracking-tight">{school.name}</span>
           </Link>
-          <Link href={`/s/${slug}/status`} className="inline-flex min-h-11 shrink-0 items-center rounded-xl px-3 text-sm font-medium text-accent hover:bg-accent-soft">
+          <Link href={`/s/${slug}/status`} className="inline-flex min-h-11 shrink-0 items-center rounded-full border border-border bg-card px-4 text-sm font-semibold text-accent shadow-xs hover:bg-accent-soft">
             {t("gallery.checkClaim")}
           </Link>
         </div>
       </header>
-      <main id="main" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6">
+      <main id="main" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:py-10">
         {children}
       </main>
-      <footer className="border-t border-border">
+      <footer className="border-t border-border bg-card">
         <div className="mx-auto flex w-full max-w-5xl flex-wrap items-center justify-between gap-2 px-4 py-4 text-sm text-muted">
           <p>
             {school.pickupLocation ? t("gallery.pickup", { location: school.pickupLocation, hours: school.pickupHours ?? "" }) : null}

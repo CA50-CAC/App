@@ -32,41 +32,51 @@ export function ItemCard({
     item.visibility === "full" && item.photoUrl ? (
       // Plain <img>: photos are short-lived signed URLs, not static assets.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={item.photoUrl} alt={itemAltText(item)} className="aspect-square w-full object-cover" loading="lazy" />
+      <img src={item.photoUrl} alt={itemAltText(item)} className="aspect-square w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]" loading="lazy" />
     ) : (
       <CategoryTile category={item.category} colors={item.colors} className="aspect-square w-full" />
     );
 
   const body = (
     <>
-      <div className="relative overflow-hidden rounded-t-2xl bg-surface">
+      <div className="relative m-1.5 mb-0 overflow-hidden rounded-[0.9rem] bg-surface">
         {media}
         {item.visibility === "limited" ? (
-          <span className="absolute top-2 left-2 rounded-full bg-background/90 px-2 py-0.5 text-xs font-medium text-foreground">
+          <span className="absolute top-2 left-2 inline-flex items-center gap-1 rounded-full bg-card/95 px-2.5 py-1 text-xs font-semibold text-foreground shadow-sm">
+            <svg aria-hidden viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="11" width="14" height="10" rx="2" />
+              <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+            </svg>
             {t("gallery.noPhoto")}
           </span>
         ) : null}
       </div>
-      <div className="flex flex-1 flex-col gap-1 p-3">
-        <p className="flex items-center gap-1.5 font-semibold">
-          <CategoryIcon category={item.category} className="size-4 shrink-0 text-muted" />
-          <span className="truncate">{title}</span>
+      <div className="flex flex-1 flex-col gap-1 p-3 sm:p-3.5">
+        <p className="flex items-start gap-1.5 leading-snug font-semibold">
+          <CategoryIcon category={item.category} className="mt-0.5 size-4 shrink-0 text-accent" />
+          <span className="line-clamp-2">{title}</span>
         </p>
         {item.colors.length ? <p className="text-sm text-muted">{item.colors.map((c) => t(`color.${c}`)).join(", ")}</p> : null}
-        <p className="text-sm text-muted">
-          {item.foundLocationName} · {foundAgo(item.foundAt, now, timeZone)}
-        </p>
         {item.visibility === "full" && item.note ? <p className="line-clamp-2 text-sm">{item.note}</p> : null}
+        <p className="mt-auto flex items-center gap-1 pt-1.5 text-xs font-medium text-muted">
+          <svg aria-hidden viewBox="0 0 24 24" className="size-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21Z" />
+            <circle cx="12" cy="9.5" r="2.5" />
+          </svg>
+          <span className="truncate">
+            {item.foundLocationName} · {foundAgo(item.foundAt, now, timeZone)}
+          </span>
+        </p>
         {item.hasNameLabel ? (
-          <p className="mt-1 self-start rounded-full bg-accent-soft px-2 py-0.5 text-xs font-medium text-accent">{t("item.hasNameLabel")}</p>
+          <p className="mt-1 self-start rounded-full bg-accent-soft px-2 py-0.5 text-xs font-semibold text-accent">{t("item.hasNameLabel")}</p>
         ) : null}
       </div>
     </>
   );
 
-  const cls = "flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-background";
+  const cls = "card group flex h-full flex-col overflow-hidden";
   return href ? (
-    <Link href={href} className={`${cls} transition-shadow hover:shadow-md`}>
+    <Link href={href} className={`${cls} card-hover`}>
       {body}
     </Link>
   ) : (
