@@ -142,6 +142,12 @@ Found while reviewing `0001_init.sql` before its first push. Fixed in `0001` its
 - **Gallery categories:** quick-filter chips are submit buttons in the search form (`name="pick"`), not links, so they work without JavaScript and keep the search text and other filters.
 - **Alternatives:** a component library (shadcn/ui, Radix). Rejected: a new dependency for styling we already have, and more code the student has to explain.
 
+### 2026-10-03: Phone-first app shell
+
+- **Choice:** On phones, students and staff get a bottom tab bar like a native app (`components/tab-bar.tsx`): students have Browse, My claim, and Pickup (a new `/s/[slug]/info` page that took over the old footer's pickup details and "different school" link); staff have Items, a raised Add button, Claims (with a pending count), and Settings. Wider screens show the same tabs as top pills. The student item screen hides the tab bar, runs the picture edge to edge, and keeps "This might be mine" in a fixed bar at the bottom. The gallery search is one field with a filters button that opens a panel (a `<details>`, so it still works without JavaScript).
+- **Why:** Students will almost always open LostBox from a QR poster on their phone, so the main actions should sit where the thumb is.
+- **Alternatives:** an installable PWA with a manifest and service worker. Not now: more to explain and test, and nothing needs to work offline.
+
 ### 2026-10-01: Out of scope, as agreed
 
 AI matching, auto-fill, auto-blur, notifications, analytics, lost-item reports, the platform approval page, the poster page, the donate list, the retention job (the data-layer methods for it exist and are tested), logo upload, location "nearby" links UI, and QR codes on the launch screen.
