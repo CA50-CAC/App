@@ -20,6 +20,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  // Lets the bottom tab bar extend under the iPhone home indicator (it pads itself with env(safe-area-inset-bottom)).
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f6f7f6" },
     { media: "(prefers-color-scheme: dark)", color: "#0a1013" },
