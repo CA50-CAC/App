@@ -12,13 +12,13 @@ const STATUS_STYLE: Record<ItemStatus, string> = {
 };
 
 export function StatusBadge({ status }: { status: ItemStatus }) {
-  return <span className={`inline-flex rounded-full px-2 py-0.5 text-sm font-medium ${STATUS_STYLE[status]}`}>{t(`status.${status}`)}</span>;
+  return <span className={`inline-flex rounded-full px-2.5 py-0.5 text-sm font-semibold ${STATUS_STYLE[status]}`}>{t(`status.${status}`)}</span>;
 }
 
 export function VisibilityBadge({ visibility }: { visibility: Visibility }) {
-  const style = visibility === "staff_only" ? "border-warning text-warning" : "border-border text-muted";
+  const style = visibility === "staff_only" ? "border-warning/40 bg-warning-soft text-warning" : "border-border bg-card text-muted";
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-sm ${style}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-sm font-medium ${style}`}>
       {visibility === "staff_only" ? <span aria-hidden>🔒</span> : null}
       {t(`visibility.${visibility}`)}
     </span>

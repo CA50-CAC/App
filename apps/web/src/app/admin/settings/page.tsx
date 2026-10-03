@@ -29,7 +29,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-10">
-      <h1 className="text-2xl font-semibold tracking-tight">{t("settings.title")}</h1>
+      <h1 className="text-3xl font-semibold tracking-tight">{t("settings.title")}</h1>
       {!isOwner ? <Alert tone="info">{t("admin.error.owner")}</Alert> : null}
 
       <Section id="access" title={t("settings.joinCode")}>
@@ -74,7 +74,7 @@ export default async function SettingsPage() {
 
 function Section({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section aria-labelledby={`${id}-title`} className="flex flex-col gap-4 rounded-2xl border border-border p-4 sm:p-6">
+    <section aria-labelledby={`${id}-title`} className="card flex flex-col gap-4 p-5 sm:p-8">
       <h2 id={`${id}-title`} className="text-xl font-semibold">
         {title}
       </h2>

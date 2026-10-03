@@ -42,7 +42,7 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/admin/cla
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-semibold tracking-tight">{t("claims.title")}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">{t("claims.title")}</h1>
         <p className="max-w-3xl text-muted">{t("claims.lead")}</p>
       </div>
 
@@ -84,7 +84,7 @@ export default async function ClaimsPage({ searchParams }: PageProps<"/admin/cla
 
 function ClaimCard({ claim, item, photoUrl, view, timeZone }: { claim: Claim; item?: StaffItem; photoUrl: string | null; view: string; timeZone: string }) {
   return (
-    <article className="grid gap-4 rounded-2xl border border-border p-4 md:grid-cols-2" aria-label={`Claim for ${item ? t(`category.${item.category}`) : "item"}`}>
+    <article className="card grid gap-5 p-5 md:grid-cols-2" aria-label={`Claim for ${item ? t(`category.${item.category}`) : "item"}`}>
       <section className="flex flex-col gap-3 md:order-2 md:border-l md:border-border md:pl-4">
         <h2 className="text-sm font-semibold text-muted uppercase">{t("claims.item")}</h2>
         {item ? (

@@ -102,7 +102,7 @@ export function LocationsEditor({ mode, initial, backHref }: { mode: "wizard" | 
         {names.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border p-4 text-muted">{t("locations.empty")}</p>
         ) : (
-          <ol className="flex flex-col divide-y divide-border rounded-xl border border-border">
+          <ol className="card flex flex-col divide-y divide-border overflow-hidden">
             {names.map((n, i) => (
               <li key={n} className="flex items-center gap-2 py-1 pr-1 pl-4">
                 <span className="w-6 text-sm text-muted tabular-nums">{i + 1}.</span>

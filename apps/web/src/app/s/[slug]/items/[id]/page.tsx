@@ -7,7 +7,7 @@ import Link from "next/link";
 import { itemAltText } from "@/components/item-card";
 import { CategoryTile, ColorChips } from "@/components/item-visuals";
 import { EmptyState } from "@/components/ui/alert";
-import { ButtonLink } from "@/components/ui/button";
+import { buttonClass, ButtonLink } from "@/components/ui/button";
 import { foundAgo } from "@/lib/i18n/dates";
 import { t } from "@/lib/i18n";
 import { getStudentContext } from "@/lib/server/student-context";
@@ -18,7 +18,7 @@ export default async function StudentItemPage({ params }: PageProps<"/s/[slug]/i
   const { students, school } = await getStudentContext(slug);
   const item = /^[0-9a-f-]{36}$/.test(id) ? await students.getItem(id) : null;
   const back = (
-    <Link href={`/s/${slug}`} className="self-start rounded text-sm font-medium text-accent underline underline-offset-4">
+    <Link href={`/s/${slug}`} className="inline-flex min-h-11 items-center self-start rounded-full px-1 text-sm font-semibold text-accent hover:underline underline-offset-4">
       ← {t("gallery.back")}
     </Link>
   );
@@ -36,18 +36,18 @@ export default async function StudentItemPage({ params }: PageProps<"/s/[slug]/i
   return (
     <div className="flex flex-col gap-6">
       {back}
-      <div className="grid gap-6 md:grid-cols-2">
-        <div className="overflow-hidden rounded-2xl border border-border">
+      <div className="grid gap-6 md:grid-cols-2 md:gap-10">
+        <div className="card overflow-hidden p-2">
           {item.visibility === "full" && item.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.photoUrl} alt={itemAltText(item)} className="aspect-square w-full object-cover" />
+            <img src={item.photoUrl} alt={itemAltText(item)} className="aspect-square w-full rounded-[0.9rem] object-cover" />
           ) : (
-            <CategoryTile category={item.category} colors={item.colors} className="aspect-square w-full" />
+            <CategoryTile category={item.category} colors={item.colors} className="aspect-square w-full rounded-[0.9rem]" />
           )}
         </div>
-        <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <h1 className="text-3xl font-semibold tracking-tight">{t(`category.${item.category}`)}</h1>
+        <div className="flex flex-col gap-5 md:py-2">
+          <div className="flex flex-col gap-1.5">
+            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t(`category.${item.category}`)}</h1>
             <p className="text-muted">{t("detail.found", { when: foundAgo(item.foundAt).toLowerCase(), place: item.foundLocationName })}</p>
           </div>
           <ColorChips colors={item.colors} />
@@ -60,12 +60,15 @@ export default async function StudentItemPage({ params }: PageProps<"/s/[slug]/i
               <p>{item.note}</p>
             </div>
           ) : null}
-          {item.visibility === "limited" ? <p className="rounded-xl bg-surface p-3 text-sm">{t("detail.limited")}</p> : null}
+          {item.visibility === "limited" ? <p className="rounded-2xl border border-border bg-surface p-4 text-sm">{t("detail.limited")}</p> : null}
+          <a href="#claim" className={`${buttonClass("primary")} self-start max-md:hidden md:mt-2`}>
+            {t("detail.mine")}
+          </a>
         </div>
       </div>
 
-      <section id="claim" aria-labelledby="claim-title" className="flex flex-col gap-3 rounded-2xl border border-border p-4 sm:p-6">
-        <h2 id="claim-title" className="text-xl font-semibold">
+      <section id="claim" aria-labelledby="claim-title" className="card flex scroll-mt-24 flex-col gap-3 p-5 sm:p-8">
+        <h2 id="claim-title" className="text-2xl font-semibold tracking-tight">
           {t("detail.mine")}
         </h2>
         <p className="text-muted">{t("claim.lead")}</p>

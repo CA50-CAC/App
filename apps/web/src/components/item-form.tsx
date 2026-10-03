@@ -133,7 +133,7 @@ export function ItemForm({
 
       <TextArea id="note" name="note" label={t("intake.note")} help={t("intake.note.help")} optional={t("common.optional")} defaultValue={initial.note} maxLength={280} error={err("note")} />
 
-      <fieldset className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+      <fieldset className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4">
         <legend className="px-1 font-medium">{t("intake.visibility")}</legend>
         <label className="flex min-h-11 items-center justify-between gap-4">
           <span>

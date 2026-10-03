@@ -31,29 +31,52 @@ export function WizardShell({
           <Logo />
           <span className="sr-only">{t("app.name")}</span>
         </Link>
-        <p className="text-sm text-muted">{t("setup.stepOf", { step, total: TOTAL })}</p>
+        <p className="rounded-full border border-border bg-card px-3 py-1 text-sm font-medium text-muted">{t("setup.stepOf", { step, total: TOTAL })}</p>
       </div>
 
       <nav aria-label={t("setup.progress")}>
-        <ol className="grid grid-cols-7 gap-1.5">
+        <ol className="grid grid-cols-7">
           {Array.from({ length: TOTAL }, (_, i) => i + 1).map((n) => {
             const label = t(`setup.step.${n}` as MessageKey);
             const done = n < step;
             const current = n === step;
             const reachable = n <= maxReachable && !current;
-            const bar = `h-1.5 rounded-full ${current || done ? "bg-accent" : "bg-border"}`;
-            const text = `mt-1.5 hidden text-xs sm:block ${current ? "font-semibold text-foreground" : "text-muted"}`;
+            // A numbered dot (a check once done) on a line that fills in as you go.
+            const bar = (
+              <div aria-hidden className="relative flex items-center justify-center">
+                {n > 1 ? <span className={`absolute right-1/2 left-0 h-0.5 -translate-x-4 ${n <= step ? "bg-accent" : "bg-border"}`} /> : null}
+                {n < TOTAL ? <span className={`absolute right-0 left-1/2 h-0.5 translate-x-4 ${n < step ? "bg-accent" : "bg-border"}`} /> : null}
+                <span
+                  className={`relative grid size-8 place-items-center rounded-full text-sm font-bold transition-colors ${
+                    done
+                      ? "bg-accent text-accent-foreground"
+                      : current
+                        ? "bg-card text-accent ring-2 ring-accent ring-offset-2 ring-offset-background"
+                        : "border border-border bg-card text-muted"
+                  }`}
+                >
+                  {done ? (
+                    <svg viewBox="0 0 24 24" className="size-4" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="m5 12 5 5 9-10" />
+                    </svg>
+                  ) : (
+                    n
+                  )}
+                </span>
+              </div>
+            );
+            const text = `mt-2 hidden text-center text-xs sm:block ${current ? "font-semibold text-foreground" : "text-muted"}`;
             return (
               <li key={n}>
                 {reachable ? (
-                  <Link href={`/setup/${n}`} className="block rounded">
-                    <div className={bar} />
+                  <Link href={`/setup/${n}`} className="block rounded-lg py-1 hover:[&_span.relative]:ring-2 hover:[&_span.relative]:ring-accent/40">
+                    {bar}
                     <span className={text}>{label}</span>
                     <span className="sr-only sm:hidden">{label}</span>
                   </Link>
                 ) : (
-                  <div aria-current={current ? "step" : undefined}>
-                    <div className={bar} />
+                  <div aria-current={current ? "step" : undefined} className="py-1">
+                    {bar}
                     <span className={text}>{label}</span>
                     <span className="sr-only sm:hidden">{label}</span>
                   </div>
@@ -65,7 +88,7 @@ export function WizardShell({
       </nav>
 
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{title}</h1>
         {lead ? <p className="text-lg text-muted">{lead}</p> : null}
       </div>
       {children}

@@ -32,11 +32,11 @@ export default async function ClaimStatusPage({ params, searchParams }: PageProp
 
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-3xl font-semibold tracking-tight">{t("status.title")}</h1>
+      <div className="flex flex-col gap-1.5">
+        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("status.title")}</h1>
         <p className="text-muted">{t("status.lead")}</p>
       </div>
-      <form method="get" className="flex flex-col gap-2">
+      <form method="get" className="card flex flex-col gap-2 p-5 sm:p-6">
         <label htmlFor="code" className="font-medium">
           {t("status.code")}
         </label>

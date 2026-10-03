@@ -21,15 +21,18 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
 
   return (
     <div className="flex flex-1 flex-col">
-      <header className="border-b border-border bg-background">
-        <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 pt-3">
+      <header className="sticky top-0 z-20 border-b border-border bg-card/85 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-4 pt-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <Link href="/admin" className="rounded-lg">
                 <Logo withName={false} />
                 <span className="sr-only">{t("app.name")}</span>
               </Link>
-              <p className="truncate font-semibold">{school.name}</p>
+              <div className="flex min-w-0 flex-col">
+                <p className="truncate leading-tight font-semibold">{school.name}</p>
+                <p className="text-xs font-medium text-muted">{t("nav.staffArea")}</p>
+              </div>
             </div>
             <form action={signOut} className="flex items-center gap-3">
               <span className="hidden text-sm text-muted sm:inline">{t("nav.signedInAs", { email: session.email })}</span>
@@ -49,9 +52,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           />
         </div>
       </header>
-      <main id="main" className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6">
+      <main id="main" className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 sm:py-8">
         {demoSchool ? (
-          <form action={resetDemoData} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-warning bg-warning-soft px-4 py-2">
+          <form action={resetDemoData} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-warning/30 bg-warning-soft px-4 py-2">
             <p className="text-sm text-warning">{t("demo.resetHelp")}</p>
             <Button type="submit" variant="secondary">
               {t("demo.reset")}

@@ -21,7 +21,7 @@ export function ClaimForm({ slug, itemId, pickup, hours }: { slug: string; itemI
         <Alert tone="success" title={t("claim.sent.title")}>
           {t("claim.sent.body")}
         </Alert>
-        <div className="rounded-2xl border-2 border-accent p-5 text-center">
+        <div className="rounded-2xl border-2 border-dashed border-accent bg-accent-soft p-6 text-center">
           <p className="text-sm font-medium text-muted">{t("claim.sent.code")}</p>
           <p className="font-mono text-3xl font-semibold tracking-widest text-accent select-all">{code}</p>
         </div>
