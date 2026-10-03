@@ -12,7 +12,7 @@ import { t } from "@/lib/i18n";
 import { photoStore } from "@/lib/server/photos";
 import { getStaffContext } from "@/lib/server/staff-context";
 
-const selectClass = "min-h-11 rounded-xl border border-border bg-card px-3 shadow-xs";
+const selectClass = "min-h-11 w-full rounded-xl border border-border bg-card px-3 shadow-xs md:w-auto";
 
 export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
   const params = await searchParams;
@@ -42,14 +42,16 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">{t("items.title")}</h1>
-        <ButtonLink href="/admin/items/new">+ {t("items.add")}</ButtonLink>
+        <ButtonLink href="/admin/items/new" className="max-md:hidden">
+          + {t("items.add")}
+        </ButtonLink>
       </div>
       {params.reset ? <Alert tone="success">{t("demo.resetDone")}</Alert> : null}
       {params.removed ? <Alert tone="success">{t("status.removed")}.</Alert> : null}
       {params.error === "owner" ? <Alert tone="warning">{t("admin.error.owner")}</Alert> : null}
 
-      <form method="get" className="card flex flex-wrap items-end gap-3 p-4" aria-label="Filters">
-        <label className="flex flex-col gap-1 text-sm font-medium">
+      <form method="get" className="card grid grid-cols-2 items-end gap-3 p-3 sm:p-4 md:flex md:flex-wrap" aria-label="Filters">
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium">
           {t("items.filter.status")}
           <select name="status" defaultValue={status} className={selectClass}>
             <option value="open">{t("items.filter.open")}</option>
@@ -61,7 +63,7 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
             <option value="all">{t("items.filter.all")}</option>
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium">
           {t("items.filter.category")}
           <select name="category" defaultValue={category} className={selectClass}>
             <option value="">{t("items.filter.all")}</option>
@@ -72,7 +74,7 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1 text-sm font-medium">
+        <label className="flex min-w-0 flex-col gap-1 text-sm font-medium">
           {t("items.filter.location")}
           <select name="location" defaultValue={location} className={selectClass}>
             <option value="">{t("items.filter.all")}</option>
@@ -83,7 +85,7 @@ export default async function ItemsPage({ searchParams }: PageProps<"/admin">) {
             ))}
           </select>
         </label>
-        <Button type="submit" variant="secondary">
+        <Button type="submit" variant="secondary" className="w-full md:w-auto">
           {t("items.filter.apply")}
         </Button>
       </form>
