@@ -5,6 +5,7 @@
  */
 import Link from "next/link";
 import { itemAltText } from "@/components/item-card";
+import { Icon } from "@/components/icons";
 import { CategoryTile, ColorChips } from "@/components/item-visuals";
 import { EmptyState } from "@/components/ui/alert";
 import { buttonClass, ButtonLink } from "@/components/ui/button";
@@ -35,45 +36,70 @@ export default async function StudentItemPage({ params }: PageProps<"/s/[slug]/i
   const pickup = school.pickupLocation ?? "the front office";
   return (
     <div className="flex flex-col gap-6">
-      {back}
+      <div className="max-md:hidden">{back}</div>
       <div className="grid gap-6 md:grid-cols-2 md:gap-10">
-        <div className="card overflow-hidden p-2">
+        {/* On phones the picture runs edge to edge under the top bar, like an app's detail screen. */}
+        <div className="relative max-md:-mx-4 max-md:-mt-5 md:card md:overflow-hidden md:p-2">
           {item.visibility === "full" && item.photoUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={item.photoUrl} alt={itemAltText(item)} className="aspect-square w-full rounded-[0.9rem] object-cover" />
+            <img src={item.photoUrl} alt={itemAltText(item)} className="aspect-square w-full object-cover md:rounded-[0.9rem]" />
           ) : (
-            <CategoryTile category={item.category} colors={item.colors} className="aspect-square w-full rounded-[0.9rem]" />
+            <CategoryTile category={item.category} colors={item.colors} className="aspect-square w-full md:rounded-[0.9rem]" />
           )}
+          <Link
+            href={`/s/${slug}`}
+            aria-label={t("gallery.back")}
+            className="absolute top-3 left-3 grid size-11 place-items-center rounded-full bg-card/90 text-foreground shadow-md backdrop-blur md:hidden"
+          >
+            <Icon name="back" className="size-5" strokeWidth={2.5} />
+          </Link>
         </div>
-        <div className="flex flex-col gap-5 md:py-2">
+        <div className="relative flex flex-col gap-5 max-md:-mx-4 max-md:-mt-12 max-md:rounded-t-[1.75rem] max-md:bg-background max-md:px-4 max-md:pt-6 md:py-2">
           <div className="flex flex-col gap-1.5">
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t(`category.${item.category}`)}</h1>
-            <p className="text-muted">{t("detail.found", { when: foundAgo(item.foundAt).toLowerCase(), place: item.foundLocationName })}</p>
+            <h1 className="text-[1.75rem] leading-tight font-semibold tracking-tight sm:text-4xl">{t(`category.${item.category}`)}</h1>
+            <p className="flex items-center gap-1.5 text-muted">
+              <Icon name="pin" className="size-4 shrink-0" />
+              {t("detail.found", { when: foundAgo(item.foundAt).toLowerCase(), place: item.foundLocationName })}
+            </p>
           </div>
-          <ColorChips colors={item.colors} />
-          {item.hasNameLabel ? (
-            <p className="self-start rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent">{t("item.hasNameLabel")}</p>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-2">
+            <ColorChips colors={item.colors} />
+            {item.hasNameLabel ? (
+              <p className="rounded-full bg-accent-soft px-3 py-1 text-sm font-medium text-accent">{t("item.hasNameLabel")}</p>
+            ) : null}
+          </div>
           {item.visibility === "full" && item.note ? (
-            <div>
+            <div className="card p-4">
               <h2 className="text-sm font-medium text-muted">{t("detail.description")}</h2>
-              <p>{item.note}</p>
+              <p className="mt-0.5">{item.note}</p>
             </div>
           ) : null}
-          {item.visibility === "limited" ? <p className="rounded-2xl border border-border bg-surface p-4 text-sm">{t("detail.limited")}</p> : null}
+          {item.visibility === "limited" ? (
+            <p className="flex items-start gap-2.5 rounded-2xl border border-border bg-surface p-4 text-sm">
+              <Icon name="lock" className="mt-0.5 size-4 shrink-0 text-accent" />
+              {t("detail.limited")}
+            </p>
+          ) : null}
           <a href="#claim" className={`${buttonClass("primary")} self-start max-md:hidden md:mt-2`}>
             {t("detail.mine")}
           </a>
         </div>
       </div>
 
-      <section id="claim" aria-labelledby="claim-title" className="card flex scroll-mt-24 flex-col gap-3 p-5 sm:p-8">
+      <section id="claim" aria-labelledby="claim-title" className="card flex scroll-mt-20 flex-col gap-3 p-5 sm:p-8">
         <h2 id="claim-title" className="text-2xl font-semibold tracking-tight">
           {t("detail.mine")}
         </h2>
         <p className="text-muted">{t("claim.lead")}</p>
         <ClaimForm slug={slug} itemId={item.id} pickup={pickup} hours={school.pickupHours ?? ""} />
       </section>
+
+      {/* Phones: the main action stays in reach of the thumb (the tab bar is hidden on this screen). */}
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/90 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] backdrop-blur-lg md:hidden">
+        <a href="#claim" className={`${buttonClass("primary")} w-full`}>
+          {t("detail.mine")}
+        </a>
+      </div>
     </div>
   );
 }

@@ -1,13 +1,16 @@
 /** Skeleton while the gallery loads. */
 export default function Loading() {
   return (
-    <div className="flex flex-col gap-6" role="status" aria-busy="true">
+    <div className="flex flex-col gap-4" role="status" aria-busy="true">
       <span className="sr-only">Loading…</span>
       <div className="flex flex-col gap-2">
         <div className="skeleton h-10 w-2/3" />
         <div className="skeleton h-5 w-1/2" />
       </div>
-      <div className="skeleton h-16 w-full rounded-2xl" />
+      <div className="flex gap-2">
+        <div className="skeleton h-12 flex-1 rounded-2xl" />
+        <div className="skeleton size-12 rounded-2xl" />
+      </div>
       <div className="flex gap-2 overflow-hidden">
         {Array.from({ length: 6 }, (_, i) => (
           <div key={i} className="skeleton h-11 w-28 shrink-0 rounded-full" />

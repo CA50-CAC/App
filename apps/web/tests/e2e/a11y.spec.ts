@@ -46,3 +46,23 @@ test("dark mode keeps contrast", async ({ browser }) => {
   await expectNoViolations(page, "gallery (dark)");
   await ctx.close();
 });
+
+test("phone layout: tab bars, item screen, and pickup tab", async ({ browser }) => {
+  // Phone-sized viewport, where the bottom tab bars and the item screen's action bar appear.
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  await joinDemo(page);
+  await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: "Browse" })).toHaveAttribute("aria-current", "page");
+  await expectNoViolations(page, "gallery (phone)");
+  await page.getByRole("link", { name: /Water bottle/ }).first().click();
+  await expect(page.getByRole("navigation", { name: "Main" })).toHaveCount(0);
+  await expectNoViolations(page, "item detail (phone)");
+  await page.goto(`/s/${DEMO_SLUG}/info`);
+  await expect(page.getByText("Front office, room 101", { exact: true })).toBeVisible();
+  await expectNoViolations(page, "pickup (phone)");
+  await signIn(page, DEMO_STAFF);
+  await page.goto("/admin");
+  await expect(page.getByRole("navigation", { name: "Staff" }).getByRole("link", { name: "Add" })).toBeVisible();
+  await expectNoViolations(page, "staff items (phone)");
+  await ctx.close();
+});

@@ -4,6 +4,7 @@
  * from the student data layer, which only has what students may see.
  */
 import { ItemCard } from "@/components/item-card";
+import { Icon } from "@/components/icons";
 import { CategoryIcon } from "@/components/item-visuals";
 import { EmptyState } from "@/components/ui/alert";
 import { Button, buttonClass } from "@/components/ui/button";
@@ -31,7 +32,7 @@ export default async function GalleryPage({ params, searchParams }: PageProps<"/
   const filtering = Boolean(q || category || location || from || to);
   const moreFilters = Boolean(location || from || to);
   const chip = (active: boolean) =>
-    `inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition-colors ${
+    `inline-flex min-h-11 shrink-0 snap-start items-center gap-2 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition-colors ${
       active ? "border-accent bg-accent text-accent-foreground" : "border-border bg-card text-foreground hover:border-accent/50 hover:bg-accent-soft"
     }`;
 
@@ -48,38 +49,81 @@ export default async function GalleryPage({ params, searchParams }: PageProps<"/
   const now = new Date();
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-1.5">
-        <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">{t("gallery.title", { school: school.name })}</h1>
-        <p className="text-muted sm:text-lg">{t("gallery.lead")}</p>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h1 className="text-[1.75rem] leading-tight font-semibold tracking-tight sm:text-4xl">{t("gallery.title", { school: school.name })}</h1>
+        <p className="text-muted max-sm:text-[0.95rem] sm:text-lg">{t("gallery.lead")}</p>
       </div>
 
-      <form method="get" role="search" className="flex flex-col gap-3">
-        <label htmlFor="q" className="sr-only">
-          {t("gallery.search")}
-        </label>
+      <form method="get" role="search" className="relative flex flex-col gap-3">
         <input type="hidden" name="category" value={category} />
-        <div className="card flex gap-2 rounded-2xl p-2">
+        <div className="flex gap-2">
           <div className="relative flex-1">
-            <svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3 size-5 -translate-y-1/2 text-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <circle cx="11" cy="11" r="7" />
-              <path d="m20 20-3.5-3.5" />
-            </svg>
+            <label htmlFor="q" className="sr-only">
+              {t("gallery.search")}
+            </label>
+            {/* First submit button in the form, so pressing Enter searches (and keeps the chosen category). */}
+            <button
+              type="submit"
+              aria-label={t("gallery.search")}
+              className="absolute top-1/2 left-1 grid size-11 -translate-y-1/2 place-items-center rounded-xl text-muted hover:text-accent"
+            >
+              <Icon name="search" className="size-5" />
+            </button>
             <input
               id="q"
               name="q"
               type="search"
+              enterKeyHint="search"
               defaultValue={q}
               placeholder={t("gallery.search.placeholder")}
-              className={`${inputClass} min-h-12 border-transparent pl-10 text-lg shadow-none hover:border-transparent`}
+              className={`${inputClass} min-h-12 rounded-2xl pl-12 text-base`}
               maxLength={100}
             />
           </div>
-          <Button type="submit" className="min-h-12 px-5">
-            {t("gallery.search")}
-          </Button>
+          <details className="group">
+            <summary
+              aria-label={moreFilters ? `${t("gallery.filters")} (${t("gallery.filtersOn")})` : t("gallery.filters")}
+              className="relative grid size-12 cursor-pointer list-none place-items-center rounded-2xl border border-border bg-card text-foreground shadow-xs hover:border-accent/50 group-open:border-accent group-open:bg-accent-soft group-open:text-accent [&::-webkit-details-marker]:hidden"
+            >
+              <Icon name="sliders" className="size-5" />
+              {moreFilters ? <span aria-hidden className="absolute top-2.5 right-2.5 size-2 rounded-full bg-accent ring-2 ring-card" /> : null}
+            </summary>
+            <div className="card absolute inset-x-0 top-14 z-10 grid gap-3 p-4 shadow-xl sm:grid-cols-3">
+              <p className="font-semibold sm:col-span-3">{t("gallery.filters")}</p>
+              <label className="flex flex-col gap-1 text-sm font-medium">
+                {t("gallery.location")}
+                <select name="location" defaultValue={location} className={inputClass}>
+                  <option value="">{t("gallery.any")}</option>
+                  {locations.map((l) => (
+                    <option key={l} value={l}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-medium">
+                {t("gallery.from")}
+                <input type="date" name="from" defaultValue={from} className={inputClass} />
+              </label>
+              <label className="flex flex-col gap-1 text-sm font-medium">
+                {t("gallery.to")}
+                <input type="date" name="to" defaultValue={to} className={inputClass} />
+              </label>
+              <div className="flex gap-2 sm:col-span-3">
+                <Button type="submit" className="flex-1 sm:flex-none">
+                  {t("gallery.apply")}
+                </Button>
+                {filtering ? (
+                  <a href={`/s/${slug}`} className={buttonClass("secondary")}>
+                    {t("gallery.clear")}
+                  </a>
+                ) : null}
+              </div>
+            </div>
+          </details>
         </div>
-        <div role="group" aria-label={t("gallery.category")} className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none]">
+        <div role="group" aria-label={t("gallery.category")} className="-mx-4 flex snap-x gap-2 overflow-x-auto scroll-px-4 px-4 pb-1 [scrollbar-width:none]">
           <button type="submit" name="pick" value="" aria-pressed={!category} className={chip(!category)}>
             {t("gallery.all")}
           </button>
@@ -90,55 +134,18 @@ export default async function GalleryPage({ params, searchParams }: PageProps<"/
             </button>
           ))}
         </div>
-        <details className="group card rounded-2xl" open={moreFilters}>
-          <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-2 px-4 font-semibold [&::-webkit-details-marker]:hidden">
-            <span className="flex items-center gap-2">
-              <svg aria-hidden viewBox="0 0 24 24" className="size-5 text-muted" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                <path d="M4 6h16M7 12h10M10 18h4" />
-              </svg>
-              {t("gallery.filters")}
-            </span>
-            <svg aria-hidden viewBox="0 0 24 24" className="size-5 text-muted transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </summary>
-          <div className="grid gap-3 p-4 pt-0 sm:grid-cols-3">
-            <label className="flex flex-col gap-1 text-sm font-medium">
-              {t("gallery.location")}
-              <select name="location" defaultValue={location} className={inputClass}>
-                <option value="">{t("gallery.any")}</option>
-                {locations.map((l) => (
-                  <option key={l} value={l}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-medium">
-              {t("gallery.from")}
-              <input type="date" name="from" defaultValue={from} className={inputClass} />
-            </label>
-            <label className="flex flex-col gap-1 text-sm font-medium">
-              {t("gallery.to")}
-              <input type="date" name="to" defaultValue={to} className={inputClass} />
-            </label>
-            <div className="flex gap-2 sm:col-span-3">
-              <Button type="submit" variant="secondary">
-                {t("gallery.apply")}
-              </Button>
-              {filtering ? (
-                <a href={`/s/${slug}`} className={buttonClass("ghost")}>
-                  {t("gallery.clear")}
-                </a>
-              ) : null}
-            </div>
-          </div>
-        </details>
       </form>
 
-      <p className="text-sm text-muted" aria-live="polite">
-        {ids.length === 1 ? t("gallery.count.one") : t("gallery.count", { count: ids.length })}
-      </p>
+      <div className="flex min-h-8 items-center justify-between gap-3">
+        <p className="text-sm font-medium text-muted" aria-live="polite">
+          {ids.length === 1 ? t("gallery.count.one") : t("gallery.count", { count: ids.length })}
+        </p>
+        {filtering ? (
+          <a href={`/s/${slug}`} className="inline-flex min-h-11 items-center px-1 text-sm font-semibold text-accent underline-offset-4 hover:underline">
+            {t("gallery.clear")}
+          </a>
+        ) : null}
+      </div>
 
       {ids.length === 0 ? (
         <EmptyState title={t("gallery.empty.title")}>
@@ -154,7 +161,7 @@ export default async function GalleryPage({ params, searchParams }: PageProps<"/
         </ul>
       )}
       <p className="flex items-start gap-2 rounded-2xl bg-surface px-4 py-3 text-sm text-muted">
-        <span aria-hidden>🔒</span>
+        <Icon name="lock" className="mt-0.5 size-4 shrink-0" />
         {t("gallery.notListed", { pickup })}
       </p>
     </div>
